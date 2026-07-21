@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Clock, ShieldOff, ShieldCheck, ExternalLink, Activity, Eye } from 'lucide-react';
-import { getVisitLogsByDateRange, getSettings, saveSettings } from '../storage/db';
+import { getVisitLogsByDateRange, getSettings, saveSettings, getLocalDateStr } from '../storage/db';
 import { DomainStats } from '../storage/types';
 
 function formatDuration(ms: number): string {
@@ -33,7 +33,7 @@ export default function Popup() {
 
   async function loadPopupData() {
     setLoading(true);
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateStr();
     const logs = await getVisitLogsByDateRange(todayStr, todayStr);
     const settings = await getSettings();
 
@@ -194,7 +194,7 @@ export default function Popup() {
       <div className="mt-2">
         <h3 className="text-xs font-bold text-[#64748B] mb-2">今日最常访问</h3>
         {topDomains.length === 0 ? (
-          <div className="text-center py-4 text-xs text-slate-400">暂无访问记录</div>
+          <div className="text-center py-4 text-xs text-[#64748B]">暂无访问记录</div>
         ) : (
           <div className="space-y-2">
             {topDomains.map((item) => {

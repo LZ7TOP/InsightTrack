@@ -15,7 +15,7 @@ import {
   Globe,
   TrendingUp
 } from 'lucide-react';
-import { getVisitLogsByDateRange, getSettings, saveSettings, clearAllLogs } from '../storage/db';
+import { getVisitLogsByDateRange, getSettings, saveSettings, clearAllLogs, getLocalDateStr } from '../storage/db';
 import { PageVisitRecord, AppSettings, DomainStats } from '../storage/types';
 
 type TabType = 'overview' | 'site_detail' | 'compare' | 'settings';
@@ -59,8 +59,8 @@ export default function Options() {
       start.setDate(end.getDate() - 29);
     }
 
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = end.toISOString().split('T')[0];
+    const startStr = getLocalDateStr(start);
+    const endStr = getLocalDateStr(end);
 
     const fetchedLogs = await getVisitLogsByDateRange(startStr, endStr);
     setLogs(fetchedLogs);
@@ -99,7 +99,7 @@ export default function Options() {
     }))
     .sort((a, b) => b.activeTimeMs - a.activeTimeMs);
 
-  // ECharts: 饼图（设计规范：Primary #2563EB, Secondary #64748B, Tertiary #BC4800）
+  // ECharts: 饼图
   const pieOption = {
     backgroundColor: 'transparent',
     tooltip: {
@@ -127,7 +127,7 @@ export default function Options() {
     ],
   };
 
-  // ECharts: 趋势图 (Primary #2563EB Gradient)
+  // ECharts: 趋势图
   const dateMap: Record<string, { open: number; active: number }> = {};
   logs.forEach((log) => {
     if (!dateMap[log.date]) {
@@ -198,7 +198,7 @@ export default function Options() {
     ],
   };
 
-  // ECharts: 24h 热力柱状图
+  // ECharts: 24h 热力图
   const hourMap = new Array(24).fill(0);
   logs.forEach((log) => {
     hourMap[log.hour] += log.activeTimeMs;
@@ -262,7 +262,7 @@ export default function Options() {
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(logs, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `insighttrack_backup_${new Date().toISOString().split('T')[0]}.json`);
+    downloadAnchor.setAttribute('download', `insighttrack_backup_${getLocalDateStr()}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();

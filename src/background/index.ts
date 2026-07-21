@@ -6,7 +6,8 @@ interface TrackingState {
   activeTitle: string | null;
   windowFocused: boolean;
   userActiveInContent: boolean;
-  lastActiveTime: number;
+  lastFlushTime: number;
+  lastUserActivityTime: number;
 }
 
 let state: TrackingState = {
@@ -15,38 +16,17 @@ let state: TrackingState = {
   activeTitle: null,
   windowFocused: true,
   userActiveInContent: true,
-  lastActiveTime: Date.now(),
+  lastFlushTime: Date.now(),
+  lastUserActivityTime: Date.now(),
 };
 
-// 每秒更新定时器
-const ALARM_NAME = 'TRACKING_TICK';
+// 刷新并保存从 lastFlushTime 到当前时间点的真实毫秒数
+async function flushCurrentTime() {
+  const now = Date.now();
+  const elapsedMs = now - state.lastFlushTime;
+  state.lastFlushTime = now;
 
-async function initTracker() {
-  await chrome.alarms.create(ALARM_NAME, { periodInMinutes: 1 / 60 }); // 每秒触发一次
-  await updateActiveTab();
-}
-
-async function updateActiveTab() {
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab && tab.id && tab.url) {
-      state.activeTabId = tab.id;
-      state.activeUrl = tab.url;
-      state.activeTitle = tab.title || '';
-    } else {
-      state.activeTabId = null;
-      state.activeUrl = null;
-      state.activeTitle = null;
-    }
-  } catch (err) {
-    console.error('Failed to query active tab:', err);
-  }
-}
-
-// 定时器心跳回调：累加驻留与活跃时间
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name !== ALARM_NAME) return;
-
+  if (elapsedMs <= 0) return;
   if (!state.windowFocused || !state.activeUrl) return;
 
   const settings = await getSettings();
@@ -62,58 +42,85 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     return;
   }
 
-  // 判断是否超出空闲阈值
-  const now = Date.now();
   const idleThresholdMs = settings.idleThresholdSeconds * 1000;
-  const isUserActive = state.userActiveInContent && (now - state.lastActiveTime <= idleThresholdMs);
+  const isUserActive = state.userActiveInContent && (now - state.lastUserActivityTime <= idleThresholdMs);
 
-  // 每秒记录 1000ms 驻留时间，以及（若活跃）1000ms 活跃时间
   await recordVisitTime(
     state.activeUrl,
     state.activeTitle || domain,
-    1000, // 驻留时长
-    isUserActive ? 1000 : 0 // 活跃时长
+    elapsedMs, // 准确累加真实经过的时间毫秒数 (openTimeMs)
+    isUserActive ? elapsedMs : 0 // 活跃时间毫秒数 (activeTimeMs)
   );
+}
+
+// 切换标签页、焦点或路由时，先刷新旧页面累计时间，再重置时间戳起点
+async function switchActiveTab(newTabId: number | null, newUrl: string | null, newTitle: string | null) {
+  await flushCurrentTime();
+  state.activeTabId = newTabId;
+  state.activeUrl = newUrl;
+  state.activeTitle = newTitle || '';
+  state.lastFlushTime = Date.now();
+}
+
+async function updateActiveTab() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab && tab.id && tab.url) {
+      await switchActiveTab(tab.id, tab.url, tab.title || '');
+    } else {
+      await switchActiveTab(null, null, null);
+    }
+  } catch (err) {
+    console.error('Failed to query active tab:', err);
+  }
+}
+
+// Service Worker 存活期间每 3 秒刷新写入一次
+setInterval(async () => {
+  await flushCurrentTime();
+}, 3000);
+
+// 保底 Alarm（防休眠唤醒）
+chrome.alarms.create('FLUSH_ALARM', { periodInMinutes: 1 });
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === 'FLUSH_ALARM') {
+    await flushCurrentTime();
+  }
 });
 
-// 监听标签页切换
+// 监听标签页激活
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId);
-    state.activeTabId = tab.id || null;
-    state.activeUrl = tab.url || null;
-    state.activeTitle = tab.title || '';
-    state.lastActiveTime = Date.now();
+    await switchActiveTab(tab.id || null, tab.url || null, tab.title || '');
   } catch (err) {
     console.error('Error handling onActivated:', err);
   }
 });
 
-// 监听标签页更新（如URL变化）
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+// 监听标签页更新（如导航至新 URL）
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (tabId === state.activeTabId && changeInfo.url) {
-    state.activeUrl = changeInfo.url;
-    state.activeTitle = tab.title || '';
-    state.lastActiveTime = Date.now();
+    await switchActiveTab(tabId, changeInfo.url, tab.title || '');
   }
 });
 
 // 监听窗口焦点变化
-chrome.windows.onFocusChanged.addListener((windowId) => {
+chrome.windows.onFocusChanged.addListener(async (windowId) => {
+  await flushCurrentTime();
   if (windowId === chrome.windows.WINDOW_ID_NONE) {
     state.windowFocused = false;
   } else {
     state.windowFocused = true;
-    updateActiveTab();
-    state.lastActiveTime = Date.now();
+    await updateActiveTab();
   }
 });
 
-// 监听来自 Content Script / Popup 的消息
+// 监听来自 Content Script 的消息
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'USER_ACTIVITY') {
     state.userActiveInContent = true;
-    state.lastActiveTime = Date.now();
+    state.lastUserActivityTime = Date.now();
     sendResponse({ status: 'ok' });
   } else if (message.type === 'GET_CURRENT_STATUS') {
     sendResponse({
@@ -126,11 +133,25 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return true;
 });
 
-// 插件启动初始化
+// 结合 chrome.idle API 监听系统空闲状态
+if (chrome.idle) {
+  chrome.idle.onStateChanged.addListener(async (newState) => {
+    await flushCurrentTime();
+    if (newState === 'active') {
+      state.userActiveInContent = true;
+      state.lastUserActivityTime = Date.now();
+    } else {
+      state.userActiveInContent = false;
+    }
+  });
+}
+
 chrome.runtime.onInstalled.addListener(() => {
-  initTracker();
+  if (chrome.idle) chrome.idle.setDetectionInterval(180);
+  updateActiveTab();
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  initTracker();
+  if (chrome.idle) chrome.idle.setDetectionInterval(180);
+  updateActiveTab();
 });

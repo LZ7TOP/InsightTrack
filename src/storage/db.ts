@@ -35,6 +35,14 @@ export function getDB() {
   return dbPromise;
 }
 
+// 获取本地时区 YYYY-MM-DD 字符串，避免 UTC 时间带来的日期偏差
+export function getLocalDateStr(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // 记录或累加一次停留与活跃时长
 export async function recordVisitTime(
   url: string,
@@ -42,7 +50,13 @@ export async function recordVisitTime(
   openDurationMs: number,
   activeDurationMs: number
 ) {
-  if (!url || url.startsWith('chrome://') || url.startsWith('chrome-extension://') || url.startsWith('about:')) {
+  if (
+    !url ||
+    url.startsWith('chrome://') ||
+    url.startsWith('chrome-extension://') ||
+    url.startsWith('about:') ||
+    url.startsWith('chrome-search://')
+  ) {
     return;
   }
 
@@ -54,6 +68,8 @@ export async function recordVisitTime(
     return;
   }
 
+  if (!domain) return;
+
   // 检查黑名单
   const settings = await getSettings();
   if (isBlacklisted(domain, settings.blacklist)) {
@@ -61,14 +77,14 @@ export async function recordVisitTime(
   }
 
   const now = new Date();
-  const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  const dateStr = getLocalDateStr(now);
   const hour = now.getHours();
 
   const db = await getDB();
   const record: PageVisitRecord = {
     domain,
     url,
-    title,
+    title: title || domain,
     date: dateStr,
     hour,
     openTimeMs: openDurationMs,
@@ -83,7 +99,7 @@ export async function recordVisitTime(
 export async function getVisitLogsByDateRange(startDate: string, endDate: string): Promise<PageVisitRecord[]> {
   const db = await getDB();
   const allLogs = await db.getAll('visit_logs');
-  return allLogs.filter(log => log.date >= startDate && log.date <= endDate);
+  return allLogs.filter((log) => log.date >= startDate && log.date <= endDate);
 }
 
 // 获取特定域名的所有历史记录
@@ -122,7 +138,7 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
 }
 
 export function isBlacklisted(domain: string, blacklist: string[]): boolean {
-  return blacklist.some(item => {
+  return blacklist.some((item) => {
     if (item.startsWith('*.')) {
       const mainDomain = item.slice(2);
       return domain === mainDomain || domain.endsWith('.' + mainDomain);
