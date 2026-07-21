@@ -46,6 +46,13 @@ const goalOptions: SelectOption[] = [
   { value: '8', label: '每日 8 小时' },
 ]
 
+const refreshIntervalOptions: SelectOption[] = [
+  { value: '3', label: '每 3 秒自动刷新' },
+  { value: '5', label: '每 5 秒自动刷新' },
+  { value: '10', label: '每 10 秒自动刷新' },
+  { value: '30', label: '每 30 秒自动刷新' },
+]
+
 export default function SettingsTab({
   settings,
   logs,
@@ -208,6 +215,42 @@ export default function SettingsTab({
               )}
             </button>
           </div>
+
+          <div className='flex items-center justify-between border-t border-slate-100 pt-3'>
+            <div>
+              <span className='text-xs font-bold text-slate-800 block'>开启界面数据自动刷新</span>
+              <span className='text-[11px] text-[#64748B] block mt-0.5'>
+                后台自动定时把未落盘的内存时间落盘并无缝刷新视图中的统计数据
+              </span>
+            </div>
+            <button
+              onClick={() => updateField('autoRefresh', !settings.autoRefresh)}
+              className='hover:opacity-80 transition-opacity'
+            >
+              {settings.autoRefresh ? (
+                <ToggleRight className='w-8 h-8 text-[#2563EB]' />
+              ) : (
+                <ToggleLeft className='w-8 h-8 text-slate-300' />
+              )}
+            </button>
+          </div>
+
+          {settings.autoRefresh && (
+            <div className='flex items-center justify-between border-t border-slate-100 pt-3'>
+              <div>
+                <span className='text-xs font-bold text-slate-800 block'>自动刷新间隔频率</span>
+                <span className='text-[11px] text-[#64748B] block mt-0.5'>
+                  设置仪表盘与弹窗视图定时轮询刷新的时间间隔
+                </span>
+              </div>
+              <CustomSelect
+                options={refreshIntervalOptions}
+                value={String(settings.autoRefreshIntervalSeconds || 5)}
+                onChange={(val) => updateField('autoRefreshIntervalSeconds', Number(val))}
+                className='w-44'
+              />
+            </div>
+          )}
         </div>
       </div>
 

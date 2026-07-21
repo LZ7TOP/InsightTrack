@@ -183,6 +183,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   showBadge: true,
   dailyGoalHours: 4,
   notifyOnGoalReached: true,
+  autoRefresh: true,
+  autoRefreshIntervalSeconds: 5,
 };
 
 export async function getSettings(): Promise<AppSettings> {

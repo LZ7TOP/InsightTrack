@@ -31,12 +31,28 @@ export default function Popup() {
   useEffect(() => {
     // 强制后台立即刷新未落盘的内存时间，确保数据百分之百实时
     chrome.runtime.sendMessage({ type: 'FLUSH_NOW' }, () => {
-      loadPopupData();
+      loadPopupData(true);
     });
+
+    let timer: NodeJS.Timeout | null = null;
+    getSettings().then((s) => {
+      if (s.autoRefresh) {
+        const intervalMs = (s.autoRefreshIntervalSeconds || 5) * 1000;
+        timer = setInterval(() => {
+          chrome.runtime.sendMessage({ type: 'FLUSH_NOW' }, () => {
+            loadPopupData(false);
+          });
+        }, intervalMs);
+      }
+    });
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
   }, []);
 
-  async function loadPopupData() {
-    setLoading(true);
+  async function loadPopupData(showLoading = true) {
+    if (showLoading) setLoading(true);
     const todayStr = getLocalDateStr();
     const logs = await getVisitLogsByDateRange(todayStr, todayStr);
     const settings = await getSettings();

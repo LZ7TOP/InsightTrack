@@ -25,7 +25,9 @@ import {
 
 export default function Options() {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
-  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days'>('today')
+  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days'>(
+    'today',
+  )
   const [logs, setLogs] = useState<PageVisitRecord[]>([])
   const [settings, setSettingsState] = useState<AppSettings>({
     idleThresholdSeconds: 180,
@@ -34,6 +36,8 @@ export default function Options() {
     showBadge: true,
     dailyGoalHours: 4,
     notifyOnGoalReached: true,
+    autoRefresh: true,
+    autoRefreshIntervalSeconds: 5,
   })
 
   const [selectedDomain, setSelectedDomain] = useState<string>('')
@@ -45,6 +49,19 @@ export default function Options() {
       loadData()
     })
   }, [dateRange])
+
+  // 定时自动刷新仪表盘数据
+  useEffect(() => {
+    if (!settings.autoRefresh) return
+    const intervalMs = (settings.autoRefreshIntervalSeconds || 5) * 1000
+    const timer = setInterval(() => {
+      chrome.runtime.sendMessage({ type: 'FLUSH_NOW' }, () => {
+        loadData()
+      })
+    }, intervalMs)
+
+    return () => clearInterval(timer)
+  }, [settings.autoRefresh, settings.autoRefreshIntervalSeconds, dateRange])
 
   async function loadData() {
     const end = new Date()

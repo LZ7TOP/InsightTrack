@@ -25,6 +25,8 @@ export interface AppSettings {
   showBadge: boolean;          // 是否在插件图标显示角标时间
   dailyGoalHours: number;      // 每日活跃时间上限目标（小时）
   notifyOnGoalReached: boolean;// 超出目标是否发送桌面通知
+  autoRefresh: boolean;        // 是否自动刷新仪表盘/Popup数据
+  autoRefreshIntervalSeconds: number; // 自动刷新间隔时间（秒，如5秒、10秒、30秒）
 }
 
 export interface DailySummary {

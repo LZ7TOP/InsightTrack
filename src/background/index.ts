@@ -78,8 +78,19 @@ async function updateBadge() {
       return;
     }
 
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url || !state.windowFocused) {
+    // 优先获取主浏览器窗口中的活跃标签页
+    let tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    let tab = tabs && tabs[0];
+
+    // 如果所在标签页是插件自身的 popup / options 页面，则查找常规浏览器窗口的激活标签页
+    if (!tab || !tab.url || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('chrome://')) {
+      const normalTabs = await chrome.tabs.query({ active: true, windowType: 'normal' });
+      if (normalTabs && normalTabs.length > 0) {
+        tab = normalTabs[0];
+      }
+    }
+
+    if (!tab || !tab.url) {
       await chrome.action.setBadgeText({ text: '' });
       return;
     }
@@ -103,24 +114,14 @@ async function updateBadge() {
 
     let activeMs = domainLogs.reduce((acc, cur) => acc + cur.activeTimeMs, 0);
 
-    // 加上内存中未写盘的最新活跃毫秒数
-    const now = Date.now();
-    const unFlushedMs = now - state.lastFlushTime;
-    const idleThresholdMs = settings.idleThresholdSeconds * 1000;
-    const isUserActive = state.windowFocused && state.userActiveInContent && (now - state.lastUserActivityTime <= idleThresholdMs);
-
-    if (isUserActive) {
-      activeMs += unFlushedMs;
-    }
-
     const totalSec = Math.floor(activeMs / 1000);
 
     let text = '';
     if (totalSec <= 0) {
-      text = '';
+      text = '0s';
     } else if (totalSec < 60) {
       // 1-60 秒
-      text = `${Math.max(1, totalSec)}s`;
+      text = `${totalSec}s`;
     } else {
       const mins = Math.floor(totalSec / 60);
       if (mins < 60) {
@@ -219,8 +220,10 @@ if (chrome.idle) {
 
 chrome.runtime.onInstalled.addListener(() => {
   if (chrome.idle) chrome.idle.setDetectionInterval(180);
+  updateBadge();
 });
 
 chrome.runtime.onStartup.addListener(() => {
   if (chrome.idle) chrome.idle.setDetectionInterval(180);
+  updateBadge();
 });
