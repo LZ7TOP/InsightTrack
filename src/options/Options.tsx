@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { getVisitLogsByDateRange, getSettings, saveSettings, clearAllLogs, getLocalDateStr, cleanDomain } from '../storage/db';
 import { PageVisitRecord, AppSettings, DomainStats } from '../storage/types';
+import { CustomSelect, SelectOption } from '../components/CustomSelect';
 
 type TabType = 'overview' | 'site_list' | 'site_detail' | 'compare' | 'settings';
 
@@ -49,7 +50,7 @@ function formatTimestamp(ts: number): string {
 
 export default function Options() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  // 1. 默认展示今天的
+  // 默认展示今天的
   const [dateRange, setDateRange] = useState<'today' | '7days' | '30days'>('today');
   const [logs, setLogs] = useState<PageVisitRecord[]>([]);
   const [settings, setSettingsState] = useState<AppSettings>({
@@ -202,6 +203,20 @@ export default function Options() {
       lastVisited: Date.now(),
     }))
     .sort((a, b) => b.activeTimeMs - a.activeTimeMs);
+
+  // 下拉选择组件的 Options 数据结构转换
+  const domainSelectOptions: SelectOption[] = domainStatsList.map((d) => ({
+    value: d.domain,
+    label: d.domain,
+    subLabel: formatMs(d.activeTimeMs),
+  }));
+
+  const sortOptions: SelectOption[] = [
+    { value: 'active', label: '按实际活跃时间' },
+    { value: 'open', label: '按总驻留时间' },
+    { value: 'visits', label: '按访问/切换次数' },
+    { value: 'focus', label: '按专注率' },
+  ];
 
   // ECharts: 饼图
   const pieOption = {
@@ -643,18 +658,14 @@ export default function Options() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <ArrowUpDown className="w-4 h-4 text-[#64748B]" />
                 <span className="text-xs font-bold text-[#64748B]">排序规则:</span>
-                <select
+                <CustomSelect
+                  options={sortOptions}
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#2563EB]"
-                >
-                  <option value="active">按实际活跃时间</option>
-                  <option value="open">按总驻留时间</option>
-                  <option value="visits">按访问/切换次数</option>
-                  <option value="focus">按专注率</option>
-                </select>
+                  onChange={(val) => setSortBy(val as any)}
+                  icon={<ArrowUpDown className="w-3.5 h-3.5" />}
+                  className="w-44"
+                />
               </div>
             </div>
 
@@ -753,19 +764,15 @@ export default function Options() {
           <div className="space-y-6">
             <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <Globe className="w-5 h-5 text-[#2563EB]" />
                 <span className="text-xs font-bold text-[#64748B]">选择要分析的网站:</span>
-                <select
+                <CustomSelect
+                  options={domainSelectOptions}
                   value={selectedDomain}
-                  onChange={(e) => setSelectedDomain(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-[#2563EB]"
-                >
-                  {domainStatsList.map((d) => (
-                    <option key={d.domain} value={d.domain}>
-                      {d.domain}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedDomain}
+                  searchable
+                  icon={<Globe className="w-4 h-4" />}
+                  className="w-64"
+                />
               </div>
 
               <div className="text-right">
@@ -909,19 +916,15 @@ export default function Options() {
           <div className="space-y-6">
             <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <GitCompare className="w-5 h-5 text-[#2563EB]" />
                 <span className="text-xs font-bold text-[#64748B]">对比站点:</span>
-                <select
+                <CustomSelect
+                  options={domainSelectOptions}
                   value={compareDomain}
-                  onChange={(e) => setCompareDomain(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-[#2563EB]"
-                >
-                  {domainStatsList.map((d) => (
-                    <option key={d.domain} value={d.domain}>
-                      {d.domain}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setCompareDomain}
+                  searchable
+                  icon={<GitCompare className="w-4 h-4" />}
+                  className="w-64"
+                />
               </div>
             </div>
 
