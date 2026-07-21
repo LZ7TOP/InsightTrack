@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, ArrowUpDown, ExternalLink } from 'lucide-react'
 import { CustomSelect, SelectOption } from '../components/CustomSelect'
 import FaviconImg from '../components/FaviconImg'
+import TooltipText from '../components/TooltipText'
 import { SiteListItem, formatMs } from './utils'
 
 interface SiteListTabProps {
@@ -66,6 +67,9 @@ export default function SiteListTab({ siteList, onJumpToDetail }: SiteListTabPro
           <h3 className='text-sm font-bold text-slate-900'>
             完整网站访问明细 (共 {filteredSiteList.length} 个网站)
           </h3>
+          <span className='text-xs text-[#64748B] font-medium'>
+            标题与域名超出时，悬停即可弹出查看完整文本
+          </span>
         </div>
 
         {filteredSiteList.length === 0 ? (
@@ -73,45 +77,50 @@ export default function SiteListTab({ siteList, onJumpToDetail }: SiteListTabPro
             暂无匹配的网站数据
           </div>
         ) : (
-          <div className='overflow-x-auto'>
-            <table className='w-full text-left text-xs'>
-              <thead className='bg-slate-50 text-[#64748B] font-bold'>
+          <div className='overflow-x-auto max-h-[600px] overflow-y-auto rounded-xl border border-slate-200 relative'>
+            <table className='w-full text-left text-xs border-collapse'>
+              <thead className='bg-slate-50 text-[#64748B] font-bold sticky top-0 z-20 shadow-sm'>
                 <tr>
-                  <th className='p-3.5 rounded-l-xl'>网站图标与名称</th>
-                  <th className='p-3.5'>网站域名 / 网址</th>
-                  <th className='p-3.5'>访问/切换次数</th>
-                  <th className='p-3.5'>实际活跃时间</th>
-                  <th className='p-3.5'>总驻留时间</th>
-                  <th className='p-3.5'>专注率</th>
-                  <th className='p-3.5 rounded-r-xl text-center'>快捷操作</th>
+                  <th className='p-3.5 sticky left-0 z-30 bg-slate-50 min-w-[220px] border-b border-r border-slate-200'>
+                    网站图标与名称 (固定列)
+                  </th>
+                  <th className='p-3.5 border-b border-slate-200'>网站域名</th>
+                  <th className='p-3.5 border-b border-slate-200'>访问/切换次数</th>
+                  <th className='p-3.5 border-b border-slate-200'>实际活跃时间</th>
+                  <th className='p-3.5 border-b border-slate-200'>总驻留时间</th>
+                  <th className='p-3.5 border-b border-slate-200'>专注率</th>
+                  <th className='p-3.5 border-b border-slate-200 text-center'>快捷操作</th>
                 </tr>
               </thead>
               <tbody className='divide-y divide-slate-100'>
                 {filteredSiteList.map((site) => (
-                  <tr key={site.domain} className='hover:bg-slate-50 transition-colors'>
-                    <td className='p-3.5 font-semibold text-slate-800'>
+                  <tr key={site.domain} className='group hover:bg-slate-50 transition-colors'>
+                    {/* 标题列固定在最左侧 */}
+                    <td className='p-3.5 font-semibold text-slate-800 sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-200 min-w-[220px] shadow-sm'>
                       <div className='flex items-center space-x-3'>
                         <FaviconImg domain={site.domain} />
-                        <span className='font-bold text-slate-900 truncate max-w-[180px]'>
-                          {site.title}
-                        </span>
+                        <TooltipText
+                          text={site.title}
+                          maxWidthClass='max-w-[170px]'
+                          className='font-bold text-slate-900'
+                        />
                       </div>
                     </td>
                     <td className='p-3.5 text-[#64748B]'>
-                      <span className='px-2 py-1 bg-slate-100 text-slate-700 rounded-md font-mono text-[11px]'>
-                        {site.domain}
+                      <span className='px-2 py-1 bg-slate-100 text-slate-700 rounded-md font-mono text-[11px] inline-block max-w-[200px]'>
+                        <TooltipText text={site.domain} maxWidthClass='max-w-[180px]' asMonospace />
                       </span>
                     </td>
-                    <td className='p-3.5 font-bold text-slate-700'>
+                    <td className='p-3.5 font-bold text-slate-700 whitespace-nowrap'>
                       {site.visits} 次 ({site.urlCount} 个页面)
                     </td>
-                    <td className='p-3.5 font-bold text-[#2563EB]'>
+                    <td className='p-3.5 font-bold text-[#2563EB] whitespace-nowrap'>
                       {formatMs(site.activeTimeMs)}
                     </td>
-                    <td className='p-3.5 text-[#64748B] font-medium'>
+                    <td className='p-3.5 text-[#64748B] font-medium whitespace-nowrap'>
                       {formatMs(site.openTimeMs)}
                     </td>
-                    <td className='p-3.5'>
+                    <td className='p-3.5 whitespace-nowrap'>
                       <div className='flex items-center space-x-2'>
                         <div className='w-16 bg-slate-100 h-2 rounded-full overflow-hidden'>
                           <div
@@ -124,7 +133,7 @@ export default function SiteListTab({ siteList, onJumpToDetail }: SiteListTabPro
                         </span>
                       </div>
                     </td>
-                    <td className='p-3.5 text-center'>
+                    <td className='p-3.5 text-center whitespace-nowrap'>
                       <button
                         onClick={() => onJumpToDetail(site.domain)}
                         className='px-3 py-1.5 bg-[#2563EB]/10 text-[#2563EB] hover:bg-[#2563EB]/20 border border-[#2563EB]/30 rounded-xl font-bold text-[11px] inline-flex items-center space-x-1 transition-all'

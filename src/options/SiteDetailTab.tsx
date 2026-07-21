@@ -3,6 +3,7 @@ import { Clock, Globe, ChevronRight, ChevronDown } from 'lucide-react'
 import { PageVisitRecord } from '../storage/types'
 import { cleanDomain } from '../storage/db'
 import { SelectOption, CustomSelect } from '../components/CustomSelect'
+import TooltipText from '../components/TooltipText'
 import { formatMs, formatTimestamp, DomainAggregation } from './utils'
 
 interface SiteDetailTabProps {
@@ -93,25 +94,27 @@ export default function SiteDetailTab({
             最常访问页面明细 ({selectedDomain})
           </h3>
           <span className='text-xs text-[#64748B] font-medium'>
-            点击任意行可展开查看每次切页的具体时间戳流水
+            标题与完整 URL 超出时，悬停即可弹出查看全称；点击行可展开切页流水
           </span>
         </div>
 
-        <div className='overflow-x-auto'>
-          <table className='w-full text-left text-xs'>
-            <thead className='bg-slate-50 text-[#64748B] font-bold'>
+        <div className='overflow-x-auto max-h-[600px] overflow-y-auto rounded-xl border border-slate-200 relative'>
+          <table className='w-full text-left text-xs border-collapse'>
+            <thead className='bg-slate-50 text-[#64748B] font-bold sticky top-0 z-20 shadow-sm'>
               <tr>
-                <th className='p-3 w-8'></th>
-                <th className='p-3 rounded-l-xl'>页面标题</th>
-                <th className='p-3'>完整 URL</th>
-                <th className='p-3'>访问/切换次数</th>
-                <th className='p-3'>累计活跃时间</th>
-                <th className='p-3'>累计驻留时间</th>
-                <th className='p-3 rounded-r-xl'>最近访问日期</th>
+                <th className='p-3 w-8 border-b border-slate-200 sticky left-0 z-30 bg-slate-50'></th>
+                <th className='p-3 border-b border-r border-slate-200 sticky left-8 z-30 bg-slate-50 min-w-[220px]'>
+                  页面标题 (固定列)
+                </th>
+                <th className='p-3 border-b border-slate-200'>完整 URL</th>
+                <th className='p-3 border-b border-slate-200'>访问/切换次数</th>
+                <th className='p-3 border-b border-slate-200'>累计活跃时间</th>
+                <th className='p-3 border-b border-slate-200'>累计驻留时间</th>
+                <th className='p-3 border-b border-slate-200'>最近访问日期</th>
               </tr>
             </thead>
             <tbody className='divide-y divide-slate-100'>
-              {aggregatedPageList.slice(0, 20).map((page, idx) => {
+              {aggregatedPageList.slice(0, 30).map((page, idx) => {
                 const isExpanded = !!expandedUrls[page.url]
                 const sortedSessions = [...page.sessions].sort((a, b) => b.timestamp - a.timestamp)
 
@@ -119,31 +122,39 @@ export default function SiteDetailTab({
                   <Fragment key={idx}>
                     <tr
                       onClick={() => toggleExpandUrl(page.url)}
-                      className={`cursor-pointer transition-colors ${
+                      className={`group cursor-pointer transition-colors ${
                         isExpanded ? 'bg-blue-50/60' : 'hover:bg-slate-50'
                       }`}
                     >
-                      <td className='p-3 text-center text-[#64748B]'>
+                      <td className='p-3 text-center text-[#64748B] sticky left-0 z-10 bg-white group-hover:bg-slate-50'>
                         {isExpanded ? (
                           <ChevronDown className='w-4 h-4 text-[#2563EB]' />
                         ) : (
                           <ChevronRight className='w-4 h-4 text-slate-400' />
                         )}
                       </td>
-                      <td className='p-3 font-semibold text-slate-800 max-w-[200px] truncate'>
-                        {page.title || '无标题'}
+                      <td className='p-3 font-semibold text-slate-800 sticky left-8 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-200 min-w-[220px] shadow-sm'>
+                        <TooltipText
+                          text={page.title || '无标题'}
+                          maxWidthClass='max-w-[200px]'
+                          className='font-bold text-slate-900'
+                        />
                       </td>
-                      <td className='p-3 text-[#64748B] max-w-[240px] truncate font-mono'>
-                        {page.url}
+                      <td className='p-3 text-[#64748B] font-mono max-w-[280px]'>
+                        <TooltipText
+                          text={page.url}
+                          maxWidthClass='max-w-[260px]'
+                          asMonospace
+                        />
                       </td>
-                      <td className='p-3 font-bold text-slate-700'>
+                      <td className='p-3 font-bold text-slate-700 whitespace-nowrap'>
                         <span className='px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200'>
                           {page.visitCount} 次切换
                         </span>
                       </td>
-                      <td className='p-3 text-[#2563EB] font-bold'>{formatMs(page.activeMs)}</td>
-                      <td className='p-3 text-[#64748B] font-medium'>{formatMs(page.openMs)}</td>
-                      <td className='p-3 text-[#64748B]'>{page.lastDate}</td>
+                      <td className='p-3 text-[#2563EB] font-bold whitespace-nowrap'>{formatMs(page.activeMs)}</td>
+                      <td className='p-3 text-[#64748B] font-medium whitespace-nowrap'>{formatMs(page.openMs)}</td>
+                      <td className='p-3 text-[#64748B] whitespace-nowrap'>{page.lastDate}</td>
                     </tr>
 
                     {isExpanded && (
@@ -155,9 +166,9 @@ export default function SiteDetailTab({
                               <span>【{page.title}】每次切换/访问的具体时间点与时长记录流水</span>
                             </h4>
 
-                            <div className='max-h-60 overflow-y-auto'>
+                            <div className='max-h-60 overflow-y-auto rounded-lg border border-slate-100'>
                               <table className='w-full text-left text-[11px] font-mono'>
-                                <thead className='bg-slate-100 text-[#64748B] font-bold'>
+                                <thead className='bg-slate-100 text-[#64748B] font-bold sticky top-0 z-10'>
                                   <tr>
                                     <th className='p-2 w-12 text-center'>#</th>
                                     <th className='p-2'>具体切换时刻</th>
