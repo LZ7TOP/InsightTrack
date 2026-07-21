@@ -19,7 +19,8 @@ import {
   List,
   Search,
   ArrowUpDown,
-  ExternalLink
+  ExternalLink,
+  LineChart
 } from 'lucide-react';
 import { getVisitLogsByDateRange, getSettings, saveSettings, clearAllLogs, getLocalDateStr, cleanDomain } from '../storage/db';
 import { PageVisitRecord, AppSettings, DomainStats } from '../storage/types';
@@ -50,8 +51,8 @@ function formatTimestamp(ts: number): string {
 
 export default function Options() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  // 默认展示今天的
-  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days'>('today');
+  // 默认展示近7天（方便展示对比折线图趋势），也可以切换今日或近30天
+  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days'>('7days');
   const [logs, setLogs] = useState<PageVisitRecord[]>([]);
   const [settings, setSettingsState] = useState<AppSettings>({
     idleThresholdSeconds: 180,
@@ -237,7 +238,7 @@ export default function Options() {
           borderWidth: 2,
         },
         label: { show: false },
-        color: ['#2563EB', '#64748B', '#BC4800', '#0284C7', '#059669', '#D97706', '#7C3AED', '#DB2777'],
+        color: ['#2563EB', '#BC4800', '#059669', '#7C3AED', '#0284C7', '#D97706', '#DB2777'],
         data: domainStatsList.slice(0, 10).map((d) => ({
           name: d.domain,
           value: d.activeTimeMs,
@@ -246,7 +247,7 @@ export default function Options() {
     ],
   };
 
-  // ECharts: 趋势图
+  // ECharts: 整体趋势图
   const dateMap: Record<string, { open: number; active: number }> = {};
   logs.forEach((log) => {
     if (!dateMap[log.date]) {
@@ -257,6 +258,74 @@ export default function Options() {
   });
 
   const sortedDates = Object.keys(dateMap).sort();
+
+  // ★核心功能：Top 热门网站使用时间对比折线图 (Multi-Site Active Time Comparison Line Chart)
+  const topComparingDomains = domainStatsList.slice(0, 5).map((d) => d.domain);
+  const domainDateMap: Record<string, Record<string, number>> = {};
+
+  topComparingDomains.forEach((d) => {
+    domainDateMap[d] = {};
+    sortedDates.forEach((date) => {
+      domainDateMap[d][date] = 0;
+    });
+  });
+
+  logs.forEach((log) => {
+    const cleanD = cleanDomain(log.domain);
+    if (domainDateMap[cleanD] && domainDateMap[cleanD][log.date] !== undefined) {
+      domainDateMap[cleanD][log.date] += log.activeTimeMs;
+    }
+  });
+
+  const palette = ['#2563EB', '#BC4800', '#059669', '#7C3AED', '#0284C7', '#D97706'];
+
+  const multiSiteTrendOption = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params: any) => {
+        let res = `<div style="font-weight: bold; margin-bottom: 4px; color: #1E293B;">${params[0].axisValue}</div>`;
+        params.forEach((p: any) => {
+          res += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 2px;">
+            <span style="color: ${p.color}; font-weight: 600;">${p.marker} ${p.seriesName}</span>
+            <b style="color: #0F172A; font-family: monospace;">${formatMs(p.value)}</b>
+          </div>`;
+        });
+        return res;
+      },
+    },
+    legend: {
+      data: topComparingDomains,
+      textStyle: { color: '#64748B', fontFamily: 'Inter' },
+      top: '0%',
+    },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: sortedDates,
+      axisLine: { lineStyle: { color: '#E2E8F0' } },
+      axisLabel: { color: '#64748B' },
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: { lineStyle: { color: '#E2E8F0' } },
+      axisLabel: {
+        color: '#64748B',
+        formatter: (val: number) => `${Math.round(val / 60000)}分`,
+      },
+      splitLine: { lineStyle: { color: '#F1F5F9' } },
+    },
+    series: topComparingDomains.map((domainName, idx) => ({
+      name: domainName,
+      type: 'line',
+      smooth: true,
+      data: sortedDates.map((date) => domainDateMap[domainName][date] || 0),
+      itemStyle: { color: palette[idx % palette.length] },
+      lineStyle: { width: 3 },
+      symbolSize: 6,
+    })),
+  };
+
   const trendOption = {
     backgroundColor: 'transparent',
     tooltip: {
@@ -537,7 +606,7 @@ export default function Options() {
             </p>
           </div>
 
-          {(activeTab === 'overview' || activeTab === 'site_list') && (
+          {(activeTab === 'overview' || activeTab === 'site_list' || activeTab === 'compare') && (
             <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
               <button
                 onClick={() => setDateRange('today')}
@@ -603,10 +672,26 @@ export default function Options() {
               </div>
             </div>
 
+            {/* ★核心重点图表：Top 热门网站使用时间对比折线图 */}
+            <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <LineChart className="w-5 h-5 text-[#2563EB]" />
+                  <h3 className="text-base font-bold text-slate-900">
+                    Top 热门网站使用时间对比折线图
+                  </h3>
+                </div>
+                <span className="text-xs text-[#64748B] font-medium">
+                  对比前 Top 5 头部网站的每日活跃注意力起伏走势
+                </span>
+              </div>
+              <ReactECharts option={multiSiteTrendOption} style={{ height: '320px' }} />
+            </div>
+
             {/* Charts Row 1 */}
             <div className="grid grid-cols-3 gap-6">
               <div className="col-span-2 bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
-                <h3 className="text-sm font-bold text-slate-900 mb-4">每日时间起伏趋势</h3>
+                <h3 className="text-sm font-bold text-slate-900 mb-4">每日整体时间起伏趋势</h3>
                 <ReactECharts option={trendOption} style={{ height: '280px' }} />
               </div>
 
@@ -641,7 +726,7 @@ export default function Options() {
           </div>
         )}
 
-        {/* Tab 2: Site List (新增全量网站列表页面) */}
+        {/* Tab 2: Site List (全量网站列表页面) */}
         {activeTab === 'site_list' && (
           <div className="space-y-6">
             {/* Search and Sort Toolbar */}
@@ -914,9 +999,24 @@ export default function Options() {
         {/* Tab 4: Compare */}
         {activeTab === 'compare' && (
           <div className="space-y-6">
+            <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <LineChart className="w-5 h-5 text-[#2563EB]" />
+                  <h3 className="text-base font-bold text-slate-900">
+                    多网站使用时间对比折线图
+                  </h3>
+                </div>
+                <span className="text-xs text-[#64748B] font-medium">
+                  聚合 Top 5 核心网站的每日活跃时间趋势多线比对
+                </span>
+              </div>
+              <ReactECharts option={multiSiteTrendOption} style={{ height: '340px' }} />
+            </div>
+
             <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <span className="text-xs font-bold text-[#64748B]">对比站点:</span>
+                <span className="text-xs font-bold text-[#64748B]">对比单站点:</span>
                 <CustomSelect
                   options={domainSelectOptions}
                   value={compareDomain}
@@ -929,7 +1029,7 @@ export default function Options() {
             </div>
 
             <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
-              <h3 className="text-sm font-bold text-slate-900 mb-4">【本周期 vs 历史记录】对比柱状图</h3>
+              <h3 className="text-sm font-bold text-slate-900 mb-4">【本周期 vs 历史记录】对比柱状图 ({compareDomain})</h3>
               <ReactECharts
                 option={{
                   backgroundColor: 'transparent',
