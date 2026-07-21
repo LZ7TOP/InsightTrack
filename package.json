@@ -4,7 +4,7 @@
   "description": "InsightTrack - 精准网页注意力与时间分析浏览器扩展，区分「页面驻留」与「实际活跃」，通过多维可视化洞察真实浏览习惯",
   "type": "module",
   "license": "MIT",
-  "author": "LZ7 Studio",
+  "author": "LZ7工作室",
   "homepage": "https://github.com/LZ7TOP/InsightTrack",
   "repository": {
     "type": "git",

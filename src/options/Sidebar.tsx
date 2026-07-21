@@ -70,7 +70,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             rel='noreferrer'
             className='text-slate-500 hover:text-[#2563EB] transition-colors font-bold underline decoration-slate-300 underline-offset-2'
           >
-            LZ7 Studio
+            LZ7工作室
           </a>
         </div>
       </div>

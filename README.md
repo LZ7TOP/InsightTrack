@@ -224,6 +224,6 @@ git push origin feature/your-feature-name
 
 **⭐ 如果这个项目对您有帮助，欢迎 Star 支持！**
 
-Made with ❤️ by [LZ7 Studio](https://github.com/LZ7TOP)
+Made with ❤️ by [LZ7工作室](https://github.com/LZ7TOP)
 
 </div>
