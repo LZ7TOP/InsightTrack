@@ -24,6 +24,8 @@ export default function Popup() {
   const [isBlacklisted, setIsBlacklisted] = useState<boolean>(false);
   const [todayOpenMs, setTodayOpenMs] = useState<number>(0);
   const [todayActiveMs, setTodayActiveMs] = useState<number>(0);
+  const [currentDomainOpenMs, setCurrentDomainOpenMs] = useState<number>(0);
+  const [currentDomainActiveMs, setCurrentDomainActiveMs] = useState<number>(0);
   const [topDomains, setTopDomains] = useState<DomainStats[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -95,8 +97,17 @@ export default function Popup() {
           const domain = cleanDomain(url.hostname);
           setCurrentDomain(domain);
           setIsBlacklisted(settings.blacklist.includes(domain));
+          if (domain && domainMap[domain]) {
+            setCurrentDomainActiveMs(domainMap[domain].active);
+            setCurrentDomainOpenMs(domainMap[domain].open);
+          } else {
+            setCurrentDomainActiveMs(0);
+            setCurrentDomainOpenMs(0);
+          }
         } catch {
           setCurrentDomain('');
+          setCurrentDomainActiveMs(0);
+          setCurrentDomainOpenMs(0);
         }
       }
       setLoading(false);
@@ -143,6 +154,10 @@ export default function Popup() {
     );
   }
 
+  const isCurrentValid = Boolean(currentDomain);
+  const displayActiveMs = isCurrentValid ? currentDomainActiveMs : todayActiveMs;
+  const displayOpenMs = isCurrentValid ? currentDomainOpenMs : todayOpenMs;
+
   return (
     <div className="p-4 bg-[#F0F2F8] text-slate-800 flex flex-col justify-between h-full">
       {/* Header */}
@@ -176,25 +191,25 @@ export default function Popup() {
         </div>
       </div>
 
-      {/* Overview Cards */}
+      {/* Overview Cards (默认展示当前网页/本站的活跃时间与驻留时间) */}
       <div className="grid grid-cols-2 gap-2.5 my-3">
         <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center space-x-1.5 text-[#2563EB] text-xs font-semibold mb-1">
             <Activity className="w-3.5 h-3.5" />
-            <span>实际活跃时间</span>
+            <span>{isCurrentValid ? '本站活跃时间' : '全局活跃时间'}</span>
           </div>
           <div className="text-base font-bold text-slate-900 tracking-tight">
-            {formatDuration(todayActiveMs)}
+            {formatDuration(displayActiveMs)}
           </div>
         </div>
 
         <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center space-x-1.5 text-[#64748B] text-xs font-semibold mb-1">
             <Eye className="w-3.5 h-3.5" />
-            <span>总驻留时间</span>
+            <span>{isCurrentValid ? '本站驻留时间' : '全局驻留时间'}</span>
           </div>
           <div className="text-base font-bold text-slate-700 tracking-tight">
-            {formatDuration(todayOpenMs)}
+            {formatDuration(displayOpenMs)}
           </div>
         </div>
       </div>
