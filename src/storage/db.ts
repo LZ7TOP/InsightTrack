@@ -35,7 +35,17 @@ export function getDB() {
   return dbPromise;
 }
 
-// 获取本地时区 YYYY-MM-DD 字符串，避免 UTC 时间带来的日期偏差
+// 域名规范化清洗：移除前缀 www.
+export function cleanDomain(hostname: string): string {
+  if (!hostname) return '';
+  let d = hostname.toLowerCase();
+  if (d.startsWith('www.')) {
+    d = d.slice(4);
+  }
+  return d;
+}
+
+// 获取本地时区 YYYY-MM-DD 字符串
 export function getLocalDateStr(date: Date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -60,19 +70,20 @@ export async function recordVisitTime(
     return;
   }
 
-  let domain = '';
+  let rawDomain = '';
   try {
     const parsed = new URL(url);
-    domain = parsed.hostname;
+    rawDomain = parsed.hostname;
   } catch {
     return;
   }
 
-  if (!domain) return;
+  if (!rawDomain) return;
+  const domain = cleanDomain(rawDomain);
 
   // 检查黑名单
   const settings = await getSettings();
-  if (isBlacklisted(domain, settings.blacklist)) {
+  if (isBlacklisted(domain, settings.blacklist) || isBlacklisted(rawDomain, settings.blacklist)) {
     return;
   }
 
@@ -81,18 +92,30 @@ export async function recordVisitTime(
   const hour = now.getHours();
 
   const db = await getDB();
-  const record: PageVisitRecord = {
-    domain,
-    url,
-    title: title || domain,
-    date: dateStr,
-    hour,
-    openTimeMs: openDurationMs,
-    activeTimeMs: activeDurationMs,
-    timestamp: now.getTime(),
-  };
+  const logsOnDate = await db.getAllFromIndex('visit_logs', 'by-date', dateStr);
+  const existingRecord = logsOnDate.find((item) => item.url === url && item.hour === hour);
 
-  await db.add('visit_logs', record);
+  if (existingRecord) {
+    existingRecord.openTimeMs += openDurationMs;
+    existingRecord.activeTimeMs += activeDurationMs;
+    if (title && title !== domain) {
+      existingRecord.title = title;
+    }
+    existingRecord.timestamp = now.getTime();
+    await db.put('visit_logs', existingRecord);
+  } else {
+    const record: PageVisitRecord = {
+      domain,
+      url,
+      title: title || domain,
+      date: dateStr,
+      hour,
+      openTimeMs: openDurationMs,
+      activeTimeMs: activeDurationMs,
+      timestamp: now.getTime(),
+    };
+    await db.add('visit_logs', record);
+  }
 }
 
 // 获取某个时间范围内的所有记录
@@ -105,7 +128,9 @@ export async function getVisitLogsByDateRange(startDate: string, endDate: string
 // 获取特定域名的所有历史记录
 export async function getLogsByDomain(domain: string): Promise<PageVisitRecord[]> {
   const db = await getDB();
-  return db.getAllFromIndex('visit_logs', 'by-domain', domain);
+  const cleaned = cleanDomain(domain);
+  const allLogs = await db.getAll('visit_logs');
+  return allLogs.filter((log) => cleanDomain(log.domain) === cleaned);
 }
 
 // 清空所有记录
@@ -138,11 +163,13 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
 }
 
 export function isBlacklisted(domain: string, blacklist: string[]): boolean {
+  const clean = cleanDomain(domain);
   return blacklist.some((item) => {
-    if (item.startsWith('*.')) {
-      const mainDomain = item.slice(2);
-      return domain === mainDomain || domain.endsWith('.' + mainDomain);
+    const cleanItem = cleanDomain(item);
+    if (cleanItem.startsWith('*.')) {
+      const mainDomain = cleanItem.slice(2);
+      return clean === mainDomain || clean.endsWith('.' + mainDomain);
     }
-    return domain === item || domain.endsWith('.' + item);
+    return clean === cleanItem || clean.endsWith('.' + cleanItem);
   });
 }

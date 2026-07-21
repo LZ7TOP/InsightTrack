@@ -15,7 +15,7 @@ import {
   Globe,
   TrendingUp
 } from 'lucide-react';
-import { getVisitLogsByDateRange, getSettings, saveSettings, clearAllLogs, getLocalDateStr } from '../storage/db';
+import { getVisitLogsByDateRange, getSettings, saveSettings, clearAllLogs, getLocalDateStr, cleanDomain } from '../storage/db';
 import { PageVisitRecord, AppSettings, DomainStats } from '../storage/types';
 
 type TabType = 'overview' | 'site_detail' | 'compare' | 'settings';
@@ -44,7 +44,9 @@ export default function Options() {
   const [newBlacklistItem, setNewBlacklistItem] = useState<string>('');
 
   useEffect(() => {
-    loadData();
+    chrome.runtime.sendMessage({ type: 'FLUSH_NOW' }, () => {
+      loadData();
+    });
   }, [dateRange]);
 
   async function loadData() {
@@ -68,7 +70,7 @@ export default function Options() {
     const s = await getSettings();
     setSettingsState(s);
 
-    const domains = Array.from(new Set(fetchedLogs.map((l) => l.domain)));
+    const domains = Array.from(new Set(fetchedLogs.map((l) => cleanDomain(l.domain))));
     if (domains.length > 0 && !selectedDomain) {
       setSelectedDomain(domains[0]);
       setCompareDomain(domains[0]);
@@ -78,16 +80,17 @@ export default function Options() {
   // 统计指标
   const totalOpenMs = logs.reduce((acc, cur) => acc + cur.openTimeMs, 0);
   const totalActiveMs = logs.reduce((acc, cur) => acc + cur.activeTimeMs, 0);
-  const focusScore = totalOpenMs > 0 ? Math.round((totalActiveMs / totalOpenMs) * 100) : 0;
+  const focusScore = totalOpenMs > 0 ? Math.min(100, Math.round((totalActiveMs / totalOpenMs) * 100)) : 0;
 
-  // 域名聚合
+  // 域名聚合 (统一清洗 www. 前缀)
   const domainMap: Record<string, { open: number; active: number }> = {};
   logs.forEach((log) => {
-    if (!domainMap[log.domain]) {
-      domainMap[log.domain] = { open: 0, active: 0 };
+    const domainKey = cleanDomain(log.domain);
+    if (!domainMap[domainKey]) {
+      domainMap[domainKey] = { open: 0, active: 0 };
     }
-    domainMap[log.domain].open += log.openTimeMs;
-    domainMap[log.domain].active += log.activeTimeMs;
+    domainMap[domainKey].open += log.openTimeMs;
+    domainMap[domainKey].active += log.activeTimeMs;
   });
 
   const domainStatsList: DomainStats[] = Object.entries(domainMap)
@@ -241,7 +244,7 @@ export default function Options() {
 
   async function handleAddBlacklist() {
     if (!newBlacklistItem.trim()) return;
-    const clean = newBlacklistItem.trim().toLowerCase();
+    const clean = cleanDomain(newBlacklistItem.trim());
     if (!settings.blacklist.includes(clean)) {
       const newB = [...settings.blacklist, clean];
       const newS = { ...settings, blacklist: newB };
@@ -252,7 +255,7 @@ export default function Options() {
   }
 
   async function handleRemoveBlacklist(item: string) {
-    const newB = settings.blacklist.filter((b) => b !== item);
+    const newB = settings.blacklist.filter((b) => cleanDomain(b) !== cleanDomain(item));
     const newS = { ...settings, blacklist: newB };
     await saveSettings(newS);
     setSettingsState(newS);
@@ -411,11 +414,11 @@ export default function Options() {
 
               <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
                 <div className="flex items-center justify-between text-[#64748B] text-xs font-bold uppercase mb-2">
-                  <span>总驻留时间</span>
+                  <span>总驻留时间 (全标签页累加)</span>
                   <Clock className="w-4 h-4 text-[#64748B]" />
                 </div>
                 <div className="text-2xl font-bold text-slate-800 tracking-tight">{formatMs(totalOpenMs)}</div>
-                <div className="text-[11px] font-medium text-[#64748B] mt-2">包含所有标签页后台保持时长</div>
+                <div className="text-[11px] font-medium text-[#64748B] mt-2">后台所有打开标签页的累计存在时长</div>
               </div>
 
               <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
@@ -508,7 +511,7 @@ export default function Options() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {logs
-                      .filter((l) => l.domain === selectedDomain)
+                      .filter((l) => cleanDomain(l.domain) === selectedDomain)
                       .slice(0, 15)
                       .map((log, idx) => (
                         <tr key={idx} className="hover:bg-slate-50">

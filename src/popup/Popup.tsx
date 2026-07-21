@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Clock, ShieldOff, ShieldCheck, ExternalLink, Activity, Eye } from 'lucide-react';
-import { getVisitLogsByDateRange, getSettings, saveSettings, getLocalDateStr } from '../storage/db';
+import { getVisitLogsByDateRange, getSettings, saveSettings, getLocalDateStr, cleanDomain } from '../storage/db';
 import { DomainStats } from '../storage/types';
 
 function formatDuration(ms: number): string {
@@ -28,7 +28,10 @@ export default function Popup() {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    loadPopupData();
+    // 强制后台立即刷新未落盘的内存时间，确保数据百分之百实时
+    chrome.runtime.sendMessage({ type: 'FLUSH_NOW' }, () => {
+      loadPopupData();
+    });
   }, []);
 
   async function loadPopupData() {
@@ -45,11 +48,12 @@ export default function Popup() {
       totalOpen += log.openTimeMs;
       totalActive += log.activeTimeMs;
 
-      if (!domainMap[log.domain]) {
-        domainMap[log.domain] = { open: 0, active: 0 };
+      const domainKey = cleanDomain(log.domain);
+      if (!domainMap[domainKey]) {
+        domainMap[domainKey] = { open: 0, active: 0 };
       }
-      domainMap[log.domain].open += log.openTimeMs;
-      domainMap[log.domain].active += log.activeTimeMs;
+      domainMap[domainKey].open += log.openTimeMs;
+      domainMap[domainKey].active += log.activeTimeMs;
     });
 
     setTodayOpenMs(totalOpen);
@@ -71,7 +75,7 @@ export default function Popup() {
       if (tabs[0] && tabs[0].url) {
         try {
           const url = new URL(tabs[0].url);
-          const domain = url.hostname;
+          const domain = cleanDomain(url.hostname);
           setCurrentDomain(domain);
           setIsBlacklisted(settings.blacklist.includes(domain));
         } catch {
@@ -88,7 +92,7 @@ export default function Popup() {
     let newBlacklist = [...settings.blacklist];
 
     if (isBlacklisted) {
-      newBlacklist = newBlacklist.filter((d) => d !== currentDomain);
+      newBlacklist = newBlacklist.filter((d) => cleanDomain(d) !== currentDomain);
     } else {
       newBlacklist.push(currentDomain);
     }
