@@ -1,4 +1,4 @@
-import { recordVisitTime, getSettings, isBlacklisted, cleanDomain } from '../storage/db';
+import { recordVisitTime, getSettings, isBlacklisted, cleanDomain, getLocalDateStr, getVisitLogsByDateRange } from '../storage/db';
 
 interface TrackingState {
   windowFocused: boolean;
@@ -69,27 +69,99 @@ async function flushCurrentTime() {
   }
 }
 
-// Service Worker 存活期间每 3 秒刷新写入一次
+// 实时更新扩展图标在 Chrome 工具栏右上的 Badge 角标文本
+async function updateBadge() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.url || !state.windowFocused) {
+      await chrome.action.setBadgeText({ text: '' });
+      return;
+    }
+
+    let domain = '';
+    try {
+      domain = cleanDomain(new URL(tab.url).hostname);
+    } catch {
+      await chrome.action.setBadgeText({ text: '' });
+      return;
+    }
+
+    const settings = await getSettings();
+    if (!domain || isBlacklisted(domain, settings.blacklist)) {
+      await chrome.action.setBadgeText({ text: '' });
+      return;
+    }
+
+    const todayStr = getLocalDateStr();
+    const logs = await getVisitLogsByDateRange(todayStr, todayStr);
+    const domainLogs = logs.filter((l) => cleanDomain(l.domain) === domain);
+
+    let activeMs = domainLogs.reduce((acc, cur) => acc + cur.activeTimeMs, 0);
+
+    // 加上内存中未写盘的最新活跃毫秒数
+    const now = Date.now();
+    const unFlushedMs = now - state.lastFlushTime;
+    const idleThresholdMs = settings.idleThresholdSeconds * 1000;
+    const isUserActive = state.windowFocused && state.userActiveInContent && (now - state.lastUserActivityTime <= idleThresholdMs);
+
+    if (isUserActive) {
+      activeMs += unFlushedMs;
+    }
+
+    const totalSec = Math.floor(activeMs / 1000);
+
+    let text = '';
+    if (totalSec <= 0) {
+      text = '';
+    } else if (totalSec < 60) {
+      // 1-60 秒
+      text = `${Math.max(1, totalSec)}s`;
+    } else {
+      const mins = Math.floor(totalSec / 60);
+      if (mins < 60) {
+        // 60秒之后显示 X分 (e.g. 1m, 2m...)
+        text = `${mins}m`;
+      } else {
+        // 60分后显示不变，一直60分
+        text = '60m';
+      }
+    }
+
+    await chrome.action.setBadgeBackgroundColor({ color: '#2563EB' });
+    if (chrome.action.setBadgeTextColor) {
+      await chrome.action.setBadgeTextColor({ color: '#FFFFFF' });
+    }
+    await chrome.action.setBadgeText({ text });
+  } catch (err) {
+    console.error('Error updating badge:', err);
+  }
+}
+
+// 每秒刷新时间并实时更新右上角 Badge 图标文字
 setInterval(async () => {
   await flushCurrentTime();
-}, 3000);
+  await updateBadge();
+}, 1000);
 
 // 保底 Alarm（防休眠唤醒）
 chrome.alarms.create('FLUSH_ALARM', { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === 'FLUSH_ALARM') {
     await flushCurrentTime();
+    await updateBadge();
   }
 });
 
 // 监听标签页激活、更新与焦点变化
 chrome.tabs.onActivated.addListener(async () => {
   await flushCurrentTime();
+  await updateBadge();
 });
 
 chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo) => {
   if (changeInfo.url || changeInfo.status === 'complete') {
     await flushCurrentTime();
+    await updateBadge();
   }
 });
 
@@ -101,6 +173,7 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
     state.windowFocused = true;
     state.lastUserActivityTime = Date.now();
   }
+  await updateBadge();
 });
 
 // 监听来自 Content Script / Popup 的消息
@@ -112,6 +185,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   } else if (message.type === 'FLUSH_NOW') {
     // 强制立即刷新内存中的未落盘时间，确保 Popup / Dashboard 获取 100% 实时数据
     flushCurrentTime().then(() => {
+      updateBadge();
       sendResponse({ status: 'flushed' });
     });
     return true;
@@ -134,6 +208,7 @@ if (chrome.idle) {
     } else {
       state.userActiveInContent = false;
     }
+    await updateBadge();
   });
 }
 
