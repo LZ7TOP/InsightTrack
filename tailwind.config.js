@@ -8,21 +8,30 @@ export default {
   theme: {
     extend: {
       colors: {
-        teal: {
-          400: '#3cddc7',
-          500: '#2dd4bf',
-          600: '#006b5f',
+        primary: {
+          DEFAULT: '#2563EB',
+          hover: '#1D4ED8',
+          light: '#EFF6FF',
         },
-        surface: {
-          DEFAULT: '#0e1513',
-          container: '#1a211f',
-          high: '#242b2a',
-          border: '#2f3634',
+        secondary: {
+          DEFAULT: '#64748B',
+          hover: '#475569',
+          light: '#F8FAFC',
+        },
+        tertiary: {
+          DEFAULT: '#BC4800',
+          hover: '#9A3B00',
+          light: '#FFF7ED',
+        },
+        neutral: {
+          DEFAULT: '#757681',
+          light: '#F0F2F8',
+          card: '#FFFFFF',
+          border: '#E2E8F0',
         }
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
       }
     },
   },
