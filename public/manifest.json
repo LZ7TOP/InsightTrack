@@ -1,8 +1,10 @@
 {
   "manifest_version": 3,
   "name": "InsightTrack - 网页时间与注意力统计",
+  "short_name": "InsightTrack",
   "version": "1.0.0",
-  "description": "记录并深度可视化分析标签页驻留时间与实际浏览活跃时间",
+  "description": "精准追踪并深度可视化分析您的浏览习惯。区分「页面驻留时间」与「实际活跃时间」，洞察真实注意力分配，助力高效时间管理。数据完全本地存储，隐私安全无忧。",
+  "homepage_url": "https://github.com/LZ7-lz7/InsightTrack",
   "permissions": [
     "tabs",
     "storage",
@@ -18,6 +20,7 @@
   },
   "action": {
     "default_popup": "src/popup/index.html",
+    "default_title": "InsightTrack - 查看当前网页活跃时间",
     "default_icon": {
       "16": "icons/icon-16.png",
       "48": "icons/icon-48.png",

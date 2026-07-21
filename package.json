@@ -1,8 +1,26 @@
 {
   "name": "insight-track",
   "version": "1.0.0",
-  "description": "InsightTrack 浏览器插件 - 精准网页注意力与时间分析工具",
+  "description": "InsightTrack - 精准网页注意力与时间分析浏览器扩展，区分「页面驻留」与「实际活跃」，通过多维可视化洞察真实浏览习惯",
   "type": "module",
+  "license": "MIT",
+  "author": "LZ7 Studio",
+  "homepage": "https://github.com/LZ7-lz7/InsightTrack",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LZ7-lz7/InsightTrack.git"
+  },
+  "keywords": [
+    "chrome-extension",
+    "browser-extension",
+    "time-tracking",
+    "attention-analysis",
+    "productivity",
+    "data-visualization",
+    "web-analytics",
+    "focus-tracking",
+    "manifest-v3"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
