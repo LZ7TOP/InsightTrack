@@ -21,12 +21,15 @@ import { PageVisitRecord, AppSettings, DomainStats } from '../storage/types';
 type TabType = 'overview' | 'site_detail' | 'compare' | 'settings';
 
 function formatMs(ms: number): string {
-  if (!ms || ms <= 0) return '0分';
+  if (!ms || ms <= 0) return '0秒';
   const totalSec = Math.floor(ms / 1000);
   const hours = Math.floor(totalSec / 3600);
   const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+
   if (hours > 0) return `${hours}小时 ${mins}分`;
-  return `${mins}分钟`;
+  if (mins > 0) return `${mins}分 ${secs}秒`;
+  return `${secs}秒`;
 }
 
 export default function Options() {
@@ -241,6 +244,45 @@ export default function Options() {
       },
     ],
   };
+
+  // 单站点深度分析：按 URL 进行聚合去重
+  const siteLogs = logs.filter((l) => cleanDomain(l.domain) === selectedDomain);
+  const pageMap: Record<
+    string,
+    {
+      title: string;
+      url: string;
+      activeMs: number;
+      openMs: number;
+      visitCount: number;
+      lastDate: string;
+    }
+  > = {};
+
+  siteLogs.forEach((log) => {
+    const key = log.url;
+    if (!pageMap[key]) {
+      pageMap[key] = {
+        title: log.title || selectedDomain,
+        url: log.url,
+        activeMs: 0,
+        openMs: 0,
+        visitCount: 0,
+        lastDate: log.date,
+      };
+    }
+    pageMap[key].activeMs += log.activeTimeMs;
+    pageMap[key].openMs += log.openTimeMs;
+    pageMap[key].visitCount += 1;
+    if (log.date > pageMap[key].lastDate) {
+      pageMap[key].lastDate = log.date;
+    }
+    if (log.title && log.title !== selectedDomain) {
+      pageMap[key].title = log.title;
+    }
+  });
+
+  const aggregatedPageList = Object.values(pageMap).sort((a, b) => b.activeMs - a.activeMs);
 
   async function handleAddBlacklist() {
     if (!newBlacklistItem.trim()) return;
@@ -505,26 +547,27 @@ export default function Options() {
                     <tr>
                       <th className="p-3 rounded-l-xl">页面标题</th>
                       <th className="p-3">完整 URL</th>
+                      <th className="p-3">访问/切换次数</th>
                       <th className="p-3">活跃时间</th>
-                      <th className="p-3 rounded-r-xl">日期</th>
+                      <th className="p-3">驻留时间</th>
+                      <th className="p-3 rounded-r-xl">最近访问日期</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {logs
-                      .filter((l) => cleanDomain(l.domain) === selectedDomain)
-                      .slice(0, 15)
-                      .map((log, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50">
-                          <td className="p-3 font-semibold text-slate-800 max-w-[240px] truncate">
-                            {log.title || '无标题'}
-                          </td>
-                          <td className="p-3 text-[#64748B] max-w-[300px] truncate">
-                            {log.url}
-                          </td>
-                          <td className="p-3 text-[#2563EB] font-bold">{formatMs(log.activeTimeMs)}</td>
-                          <td className="p-3 text-[#64748B]">{log.date}</td>
-                        </tr>
-                      ))}
+                    {aggregatedPageList.slice(0, 20).map((page, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50">
+                        <td className="p-3 font-semibold text-slate-800 max-w-[220px] truncate">
+                          {page.title || '无标题'}
+                        </td>
+                        <td className="p-3 text-[#64748B] max-w-[260px] truncate font-mono">
+                          {page.url}
+                        </td>
+                        <td className="p-3 font-bold text-slate-700">{page.visitCount} 次</td>
+                        <td className="p-3 text-[#2563EB] font-bold">{formatMs(page.activeMs)}</td>
+                        <td className="p-3 text-[#64748B] font-medium">{formatMs(page.openMs)}</td>
+                        <td className="p-3 text-[#64748B]">{page.lastDate}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
