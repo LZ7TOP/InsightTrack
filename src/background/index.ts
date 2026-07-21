@@ -82,8 +82,15 @@ async function updateBadge() {
     let tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     let tab = tabs && tabs[0];
 
-    // 如果所在标签页是插件自身的 popup / options 页面，则查找常规浏览器窗口的激活标签页
-    if (!tab || !tab.url || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('chrome://')) {
+    // 如果所在标签页是插件自身的页面或浏览器内置不可追踪页面，则查找常规浏览器窗口的激活标签页
+    if (
+      !tab ||
+      !tab.url ||
+      tab.url.startsWith('chrome-extension://') ||
+      tab.url.startsWith('chrome://') ||
+      tab.url.startsWith('about:') ||
+      tab.url.startsWith('chrome-search://')
+    ) {
       const normalTabs = await chrome.tabs.query({ active: true, windowType: 'normal' });
       if (normalTabs && normalTabs.length > 0) {
         tab = normalTabs[0];
@@ -118,9 +125,10 @@ async function updateBadge() {
 
     let text = '';
     if (totalSec <= 0) {
-      text = '0s';
+      // 0 秒或未产生活跃时长时，无需展示角标
+      text = '';
     } else if (totalSec < 60) {
-      // 1-60 秒
+      // 1-59 秒
       text = `${totalSec}s`;
     } else {
       const mins = Math.floor(totalSec / 60);
