@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
   Clock,
@@ -6,7 +6,9 @@ import {
   GitCompare,
   Settings,
   Download,
+  Upload,
   Trash2,
+  CalendarX,
   Plus,
   Shield,
   Activity,
@@ -21,9 +23,23 @@ import {
   ArrowUpDown,
   ExternalLink,
   LineChart,
-  RotateCw
+  RotateCw,
+  Sliders,
+  Bell,
+  CheckCircle2,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
-import { getVisitLogsByDateRange, getSettings, saveSettings, clearAllLogs, getLocalDateStr, cleanDomain } from '../storage/db';
+import {
+  getVisitLogsByDateRange,
+  getSettings,
+  saveSettings,
+  clearAllLogs,
+  clearLogsOlderThan,
+  importVisitLogs,
+  getLocalDateStr,
+  cleanDomain
+} from '../storage/db';
 import { PageVisitRecord, AppSettings, DomainStats } from '../storage/types';
 import { CustomSelect, SelectOption } from '../components/CustomSelect';
 
@@ -58,12 +74,16 @@ export default function Options() {
     idleThresholdSeconds: 180,
     blacklist: ['localhost', '127.0.0.1'],
     mergeSubdomains: false,
+    showBadge: true,
+    dailyGoalHours: 4,
+    notifyOnGoalReached: true,
   });
 
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [compareDomain, setCompareDomain] = useState<string>('');
   const [newBlacklistItem, setNewBlacklistItem] = useState<string>('');
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [statusMessage, setStatusMessage] = useState<string>('');
 
   // 控制单站点表格行展开状态
   const [expandedUrls, setExpandedUrls] = useState<Record<string, boolean>>({});
@@ -71,6 +91,8 @@ export default function Options() {
   // 完整网站列表页面的搜索与排序状态
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortBy, setSortBy] = useState<'active' | 'open' | 'visits' | 'focus'>('active');
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'FLUSH_NOW' }, () => {
@@ -125,6 +147,18 @@ export default function Options() {
   function handleJumpToDetail(domain: string) {
     setSelectedDomain(domain);
     setActiveTab('site_detail');
+  }
+
+  async function updateSettingField<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
+    const newSettings = { ...settings, [key]: value };
+    setSettingsState(newSettings);
+    await saveSettings(newSettings);
+    showFlashMessage('设置已自动保存');
+  }
+
+  function showFlashMessage(msg: string) {
+    setStatusMessage(msg);
+    setTimeout(() => setStatusMessage(''), 2500);
   }
 
   // 统计指标
@@ -227,6 +261,21 @@ export default function Options() {
     { value: 'open', label: '按总驻留时间' },
     { value: 'visits', label: '按访问/切换次数' },
     { value: 'focus', label: '按专注率' },
+  ];
+
+  const idleOptions: SelectOption[] = [
+    { value: '30', label: '30 秒无操作判断空闲' },
+    { value: '60', label: '1 分钟无操作判断空闲' },
+    { value: '180', label: '3 分钟无操作判断空闲' },
+    { value: '300', label: '5 分钟无操作判断空闲' },
+    { value: '600', label: '10 分钟无操作判断空闲' },
+  ];
+
+  const goalOptions: SelectOption[] = [
+    { value: '2', label: '每日 2 小时' },
+    { value: '4', label: '每日 4 小时' },
+    { value: '6', label: '每日 6 小时' },
+    { value: '8', label: '每日 8 小时' },
   ];
 
   // ECharts: 饼图
@@ -496,18 +545,21 @@ export default function Options() {
     const clean = cleanDomain(newBlacklistItem.trim());
     if (!settings.blacklist.includes(clean)) {
       const newB = [...settings.blacklist, clean];
-      const newS = { ...settings, blacklist: newB };
-      await saveSettings(newS);
-      setSettingsState(newS);
+      await updateSettingField('blacklist', newB);
       setNewBlacklistItem('');
     }
   }
 
+  async function handleAddDevPresetBlacklist() {
+    const devDomains = ['localhost', '127.0.0.1', '*.local', '*.test'];
+    const newB = Array.from(new Set([...settings.blacklist, ...devDomains]));
+    await updateSettingField('blacklist', newB);
+    showFlashMessage('已导入常用开发环境黑名单预设');
+  }
+
   async function handleRemoveBlacklist(item: string) {
     const newB = settings.blacklist.filter((b) => cleanDomain(b) !== cleanDomain(item));
-    const newS = { ...settings, blacklist: newB };
-    await saveSettings(newS);
-    setSettingsState(newS);
+    await updateSettingField('blacklist', newB);
   }
 
   function handleExportData() {
@@ -520,10 +572,43 @@ export default function Options() {
     downloadAnchor.remove();
   }
 
+  function handleImportFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const content = event.target?.result as string;
+        const json = JSON.parse(content);
+        if (Array.isArray(json)) {
+          const count = await importVisitLogs(json);
+          showFlashMessage(`成功导入 ${count} 条备份历史记录！`);
+          await loadData();
+        } else {
+          alert('备份文件格式不符合要求！');
+        }
+      } catch {
+        alert('解析备份 JSON 文件失败，请检查文件格式。');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  async function handleClearOldLogs() {
+    if (window.confirm('确定清理 30 天前的旧历史记录吗？')) {
+      const removed = await clearLogsOlderThan(30);
+      showFlashMessage(`成功清理 ${removed} 条旧浏览记录`);
+      await loadData();
+    }
+  }
+
   async function handleClearLogs() {
     if (window.confirm('确认要清空所有历史浏览记录吗？此操作无法撤销。')) {
       await clearAllLogs();
       await loadData();
+      showFlashMessage('已成功清空所有历史数据');
     }
   }
 
@@ -620,7 +705,7 @@ export default function Options() {
               {activeTab === 'site_list' && '全量网站信息与访问列表'}
               {activeTab === 'site_detail' && '单站点深度分析与切页流水'}
               {activeTab === 'compare' && '跨时间段比对'}
-              {activeTab === 'settings' && '偏好设置与数据管理'}
+              {activeTab === 'settings' && '偏好设置与高级控制台'}
             </h2>
             <p className="text-xs text-[#64748B] mt-1 font-medium">
               基于核心设计规范系统生成的全面注意力量化报告
@@ -628,6 +713,13 @@ export default function Options() {
           </div>
 
           <div className="flex items-center space-x-2">
+            {statusMessage && (
+              <span className="text-xs font-bold text-[#059669] bg-[#059669]/10 px-3 py-1.5 rounded-xl flex items-center space-x-1 border border-[#059669]/20 animate-in fade-in duration-200">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>{statusMessage}</span>
+              </span>
+            )}
+
             <button
               onClick={handleRefresh}
               className="bg-white hover:bg-slate-50 border border-slate-200 hover:border-[#2563EB]/50 text-slate-700 hover:text-[#2563EB] rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5 active:scale-95"
@@ -1094,14 +1186,139 @@ export default function Options() {
           </div>
         )}
 
-        {/* Tab 5: Settings */}
+        {/* Tab 5: Settings (全面升级的偏好设置与控制台) */}
         {activeTab === 'settings' && (
           <div className="space-y-6 max-w-4xl">
-            <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
-              <h3 className="text-sm font-bold text-slate-900 mb-2 flex items-center space-x-2">
-                <Shield className="w-4 h-4 text-[#2563EB]" />
-                <span>不纳入统计的网站黑名单</span>
+            {/* 隐藏的导入备份文件 input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImportFileChange}
+              accept=".json"
+              className="hidden"
+            />
+
+            {/* 1. 追踪与注意力算法设置 */}
+            <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-5">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2 border-b border-slate-100 pb-3">
+                <Sliders className="w-4 h-4 text-[#2563EB]" />
+                <span>追踪算法与行为策略</span>
               </h3>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">无操作判断空闲的超时阈值</span>
+                    <span className="text-[11px] text-[#64748B] block mt-0.5">
+                      在此时间内若检测不到鼠标或键盘交互，系统将自动暂停活跃时间的累加
+                    </span>
+                  </div>
+                  <CustomSelect
+                    options={idleOptions}
+                    value={String(settings.idleThresholdSeconds)}
+                    onChange={(val) => updateSettingField('idleThresholdSeconds', Number(val))}
+                    className="w-56"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">在浏览器图标上实时显示角标时间</span>
+                    <span className="text-[11px] text-[#64748B] block mt-0.5">
+                      在工具栏扩展图标角标上实时展示当前网页今日活跃使用时长（如: 15s / 42m）
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => updateSettingField('showBadge', !settings.showBadge)}
+                    className="text-2-[#2563EB] hover:opacity-80 transition-opacity"
+                  >
+                    {settings.showBadge ? (
+                      <ToggleRight className="w-8 h-8 text-[#2563EB]" />
+                    ) : (
+                      <ToggleLeft className="w-8 h-8 text-slate-300" />
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">自动归并二级与多级子域名</span>
+                    <span className="text-[11px] text-[#64748B] block mt-0.5">
+                      如将 blog.github.com 自动无缝归并到 github.com 主域名下统一统计
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => updateSettingField('mergeSubdomains', !settings.mergeSubdomains)}
+                    className="text-[#2563EB] hover:opacity-80 transition-opacity"
+                  >
+                    {settings.mergeSubdomains ? (
+                      <ToggleRight className="w-8 h-8 text-[#2563EB]" />
+                    ) : (
+                      <ToggleLeft className="w-8 h-8 text-slate-300" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. 注意力目标与防沉迷提醒 */}
+            <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-5">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2 border-b border-slate-100 pb-3">
+                <Bell className="w-4 h-4 text-[#BC4800]" />
+                <span>注意力目标与健康提醒</span>
+              </h3>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">每日活跃时间目标上限</span>
+                    <span className="text-[11px] text-[#64748B] block mt-0.5">
+                      设置单日使用浏览器的健康活跃时长预算目标
+                    </span>
+                  </div>
+                  <CustomSelect
+                    options={goalOptions}
+                    value={String(settings.dailyGoalHours)}
+                    onChange={(val) => updateSettingField('dailyGoalHours', Number(val))}
+                    className="w-44"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">超出目标时发送桌面通知提醒</span>
+                    <span className="text-[11px] text-[#64748B] block mt-0.5">
+                      当今日活跃总时长突破所设定的目标上限时弹出通知提示
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => updateSettingField('notifyOnGoalReached', !settings.notifyOnGoalReached)}
+                    className="text-[#2563EB] hover:opacity-80 transition-opacity"
+                  >
+                    {settings.notifyOnGoalReached ? (
+                      <ToggleRight className="w-8 h-8 text-[#2563EB]" />
+                    ) : (
+                      <ToggleLeft className="w-8 h-8 text-slate-300" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. 不纳入统计的黑名单规则 */}
+            <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                  <Shield className="w-4 h-4 text-[#2563EB]" />
+                  <span>不纳入统计的网站黑名单</span>
+                </h3>
+                <button
+                  onClick={handleAddDevPresetBlacklist}
+                  className="text-xs font-bold text-[#2563EB] hover:underline"
+                >
+                  + 一键导入本地开发免打扰黑名单
+                </button>
+              </div>
               <p className="text-xs text-[#64748B] mb-4 font-medium">
                 黑名单内的域名或匹配通配符的网站将完全暂停时间记录与统计。
               </p>
@@ -1132,7 +1349,7 @@ export default function Options() {
                     <span>{item}</span>
                     <button
                       onClick={() => handleRemoveBlacklist(item)}
-                      className="text-[#64748B] hover:text-rose-600 transition-colors"
+                      className="text-[#64748B] hover:text-rose-600 transition-colors font-bold"
                     >
                       ×
                     </button>
@@ -1141,25 +1358,42 @@ export default function Options() {
               </div>
             </div>
 
+            {/* 4. 数据管理与数据维护 */}
             <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
-              <h3 className="text-sm font-bold text-slate-900 mb-2">数据管理与隐私控制</h3>
-              <p className="text-xs text-[#64748B] mb-4 font-medium">所有浏览时间数据均安全存储在您的本地浏览器中。</p>
+              <h3 className="text-sm font-bold text-slate-900 mb-2">数据备份、恢复与存储管理</h3>
+              <p className="text-xs text-[#64748B] mb-4 font-medium">所有浏览时间数据均加密存储在本地 IndexedDB 数据库中。</p>
 
-              <div className="flex items-center space-x-4">
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={handleExportData}
-                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center space-x-2 transition-all"
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center space-x-2 transition-all shadow-sm"
                 >
-                  <Download className="w-4 h-4" />
-                  <span>导出本地日志 JSON 备份</span>
+                  <Download className="w-4 h-4 text-[#2563EB]" />
+                  <span>导出 JSON 备份</span>
+                </button>
+
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center space-x-2 transition-all shadow-sm"
+                >
+                  <Upload className="w-4 h-4 text-[#2563EB]" />
+                  <span>导入 JSON 还原记录</span>
+                </button>
+
+                <button
+                  onClick={handleClearOldLogs}
+                  className="px-4 py-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl flex items-center space-x-2 transition-all shadow-sm"
+                >
+                  <CalendarX className="w-4 h-4 text-amber-600" />
+                  <span>清理 30 天前旧日志</span>
                 </button>
 
                 <button
                   onClick={handleClearLogs}
-                  className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold text-xs rounded-xl flex items-center space-x-2 transition-all"
+                  className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold text-xs rounded-xl flex items-center space-x-2 transition-all shadow-sm"
                 >
                   <Trash2 className="w-4 h-4" />
-                  <span>清空全部历史记录</span>
+                  <span>清空全部历史数据</span>
                 </button>
               </div>
             </div>

@@ -139,11 +139,50 @@ export async function clearAllLogs(): Promise<void> {
   await db.clear('visit_logs');
 }
 
+// 清除指定天数以前的历史记录
+export async function clearLogsOlderThan(days: number): Promise<number> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = getLocalDateStr(cutoff);
+
+  const db = await getDB();
+  const allLogs = await db.getAll('visit_logs');
+  const oldLogs = allLogs.filter((log) => log.date < cutoffStr);
+
+  const tx = db.transaction('visit_logs', 'readwrite');
+  for (const log of oldLogs) {
+    if (log.id !== undefined) {
+      await tx.store.delete(log.id);
+    }
+  }
+  await tx.done;
+  return oldLogs.length;
+}
+
+// 导入外部 JSON 备份记录
+export async function importVisitLogs(importedLogs: PageVisitRecord[]): Promise<number> {
+  const db = await getDB();
+  const tx = db.transaction('visit_logs', 'readwrite');
+  let count = 0;
+  for (const log of importedLogs) {
+    if (log.domain && log.date && log.url) {
+      delete log.id; // 让 DB 自动生成递增主键
+      await tx.store.add(log);
+      count++;
+    }
+  }
+  await tx.done;
+  return count;
+}
+
 // 设置与配置管理
 const DEFAULT_SETTINGS: AppSettings = {
   idleThresholdSeconds: 180,
   blacklist: ['localhost', '127.0.0.1'],
   mergeSubdomains: false,
+  showBadge: true,
+  dailyGoalHours: 4,
+  notifyOnGoalReached: true,
 };
 
 export async function getSettings(): Promise<AppSettings> {

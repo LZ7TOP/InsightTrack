@@ -72,6 +72,12 @@ async function flushCurrentTime() {
 // 实时更新扩展图标在 Chrome 工具栏右上的 Badge 角标文本
 async function updateBadge() {
   try {
+    const settings = await getSettings();
+    if (!settings.showBadge) {
+      await chrome.action.setBadgeText({ text: '' });
+      return;
+    }
+
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab || !tab.url || !state.windowFocused) {
       await chrome.action.setBadgeText({ text: '' });
@@ -86,7 +92,6 @@ async function updateBadge() {
       return;
     }
 
-    const settings = await getSettings();
     if (!domain || isBlacklisted(domain, settings.blacklist)) {
       await chrome.action.setBadgeText({ text: '' });
       return;

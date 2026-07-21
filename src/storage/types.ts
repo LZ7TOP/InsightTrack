@@ -22,6 +22,9 @@ export interface AppSettings {
   idleThresholdSeconds: number; // 默认空闲判断时长（秒）
   blacklist: string[];          // 黑名单域名列表
   mergeSubdomains: boolean;    // 是否自动归并二级域名
+  showBadge: boolean;          // 是否在插件图标显示角标时间
+  dailyGoalHours: number;      // 每日活跃时间上限目标（小时）
+  notifyOnGoalReached: boolean;// 超出目标是否发送桌面通知
 }
 
 export interface DailySummary {
