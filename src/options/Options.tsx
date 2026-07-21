@@ -1188,7 +1188,7 @@ export default function Options() {
 
         {/* Tab 5: Settings (全面升级的偏好设置与控制台) */}
         {activeTab === 'settings' && (
-          <div className="space-y-6 max-w-4xl">
+          <div className="space-y-6 w-full">
             {/* 隐藏的导入备份文件 input */}
             <input
               type="file"
