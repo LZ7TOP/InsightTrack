@@ -62,17 +62,17 @@
 
 ## 🛠️ 技术栈
 
-| 层面 | 技术 |
-|------|------|
-| **扩展规范** | Chrome Manifest V3 |
-| **前端框架** | React 18 + TypeScript 5 |
-| **构建工具** | Vite 5 |
-| **样式方案** | TailwindCSS 3 |
+| 层面           | 技术                          |
+| -------------- | ----------------------------- |
+| **扩展规范**   | Chrome Manifest V3            |
+| **前端框架**   | React 18 + TypeScript 5       |
+| **构建工具**   | Vite 5                        |
+| **样式方案**   | TailwindCSS 3                 |
 | **数据可视化** | ECharts 5 (echarts-for-react) |
-| **图标库** | Lucide React |
-| **本地存储** | IndexedDB (idb 库封装) |
-| **后台引擎** | Service Worker (Manifest V3) |
-| **内容脚本** | Content Script (交互行为监听) |
+| **图标库**     | Lucide React                  |
+| **本地存储**   | IndexedDB (idb 库封装)        |
+| **后台引擎**   | Service Worker (Manifest V3)  |
+| **内容脚本**   | Content Script (交互行为监听) |
 
 ---
 
@@ -133,7 +133,7 @@ InsightTrack/
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/LZ7-lz7/InsightTrack.git
+git clone https://github.com/LZ7TOP/InsightTrack.git
 cd InsightTrack
 
 # 2. 安装依赖
@@ -224,6 +224,6 @@ git push origin feature/your-feature-name
 
 **⭐ 如果这个项目对您有帮助，欢迎 Star 支持！**
 
-Made with ❤️ by [LZ7 Studio](https://github.com/LZ7-lz7)
+Made with ❤️ by [LZ7 Studio](https://github.com/LZ7TOP)
 
 </div>

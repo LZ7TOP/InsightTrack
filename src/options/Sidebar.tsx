@@ -60,8 +60,19 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         </nav>
       </div>
 
-      <div className='pt-4 border-t border-slate-200 text-[11px] font-semibold text-[#64748B] text-center'>
-        InsightTrack v1.0.0
+      <div className='pt-4 border-t border-slate-200 text-[11px] font-semibold text-[#64748B] text-center space-y-1'>
+        <div>InsightTrack v1.0.0</div>
+        <div>
+          Made by{' '}
+          <a
+            href='https://github.com/LZ7TOP'
+            target='_blank'
+            rel='noreferrer'
+            className='text-slate-500 hover:text-[#2563EB] transition-colors font-bold underline decoration-slate-300 underline-offset-2'
+          >
+            LZ7 Studio
+          </a>
+        </div>
       </div>
     </aside>
   )

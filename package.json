@@ -5,10 +5,10 @@
   "type": "module",
   "license": "MIT",
   "author": "LZ7 Studio",
-  "homepage": "https://github.com/LZ7-lz7/InsightTrack",
+  "homepage": "https://github.com/LZ7TOP/InsightTrack",
   "repository": {
     "type": "git",
-    "url": "https://github.com/LZ7-lz7/InsightTrack.git"
+    "url": "https://github.com/LZ7TOP/InsightTrack.git"
   },
   "keywords": [
     "chrome-extension",
