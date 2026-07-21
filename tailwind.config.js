@@ -8,13 +8,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#f0f6ff',
-          100: '#e0edff',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
+        teal: {
+          400: '#3cddc7',
+          500: '#2dd4bf',
+          600: '#006b5f',
+        },
+        surface: {
+          DEFAULT: '#0e1513',
+          container: '#1a211f',
+          high: '#242b2a',
+          border: '#2f3634',
         }
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       }
     },
   },
