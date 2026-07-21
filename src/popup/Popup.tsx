@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock, ShieldOff, ShieldCheck, ExternalLink, Activity, Eye } from 'lucide-react';
+import { Clock, ShieldOff, ShieldCheck, ExternalLink, Activity, Eye, RotateCw } from 'lucide-react';
 import { getVisitLogsByDateRange, getSettings, saveSettings, getLocalDateStr, cleanDomain } from '../storage/db';
 import { DomainStats } from '../storage/types';
 
@@ -26,6 +26,7 @@ export default function Popup() {
   const [todayActiveMs, setTodayActiveMs] = useState<number>(0);
   const [topDomains, setTopDomains] = useState<DomainStats[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   useEffect(() => {
     // 强制后台立即刷新未落盘的内存时间，确保数据百分之百实时
@@ -86,6 +87,15 @@ export default function Popup() {
     });
   }
 
+  function handleRefresh() {
+    setRefreshing(true);
+    chrome.runtime.sendMessage({ type: 'FLUSH_NOW' }, () => {
+      loadPopupData().then(() => {
+        setTimeout(() => setRefreshing(false), 300);
+      });
+    });
+  }
+
   async function toggleBlacklist() {
     if (!currentDomain) return;
     const settings = await getSettings();
@@ -131,14 +141,23 @@ export default function Popup() {
           </div>
         </div>
 
-        <button
-          onClick={openDashboard}
-          className="p-1.5 hover:bg-white rounded-lg text-[#64748B] hover:text-[#2563EB] transition-colors flex items-center gap-1 text-xs font-medium border border-transparent hover:border-slate-200"
-          title="打开完整仪表盘"
-        >
-          <span>完整大屏</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={handleRefresh}
+            className="p-1.5 hover:bg-white rounded-lg text-[#64748B] hover:text-[#2563EB] transition-colors flex items-center gap-1 text-xs font-medium border border-transparent hover:border-slate-200"
+            title="刷新最新数据"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-[#2563EB]' : ''}`} />
+          </button>
+          <button
+            onClick={openDashboard}
+            className="p-1.5 hover:bg-white rounded-lg text-[#64748B] hover:text-[#2563EB] transition-colors flex items-center gap-1 text-xs font-medium border border-transparent hover:border-slate-200"
+            title="打开完整仪表盘"
+          >
+            <span>大屏</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Overview Cards */}

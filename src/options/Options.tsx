@@ -20,7 +20,8 @@ import {
   Search,
   ArrowUpDown,
   ExternalLink,
-  LineChart
+  LineChart,
+  RotateCw
 } from 'lucide-react';
 import { getVisitLogsByDateRange, getSettings, saveSettings, clearAllLogs, getLocalDateStr, cleanDomain } from '../storage/db';
 import { PageVisitRecord, AppSettings, DomainStats } from '../storage/types';
@@ -62,6 +63,7 @@ export default function Options() {
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [compareDomain, setCompareDomain] = useState<string>('');
   const [newBlacklistItem, setNewBlacklistItem] = useState<string>('');
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   // 控制单站点表格行展开状态
   const [expandedUrls, setExpandedUrls] = useState<Record<string, boolean>>({});
@@ -102,6 +104,15 @@ export default function Options() {
       setSelectedDomain(domains[0]);
       setCompareDomain(domains[0]);
     }
+  }
+
+  function handleRefresh() {
+    setRefreshing(true);
+    chrome.runtime.sendMessage({ type: 'FLUSH_NOW' }, () => {
+      loadData().then(() => {
+        setTimeout(() => setRefreshing(false), 300);
+      });
+    });
   }
 
   function toggleExpandUrl(url: string) {
@@ -258,7 +269,7 @@ export default function Options() {
 
   const sortedDates = Object.keys(dateMap).sort();
 
-  // ★核心功能：各网站使用时间对比折线图 (横轴为网站，纵轴为该网站的使用时间)
+  // ★各网站使用时间对比折线图 (横轴为网站，纵轴为该网站的使用时间)
   const siteNames = domainStatsList.slice(0, 12).map((d) => d.domain);
   const siteActiveTimes = domainStatsList.slice(0, 12).map((d) => d.activeTimeMs);
   const siteOpenTimes = domainStatsList.slice(0, 12).map((d) => d.openTimeMs);
@@ -616,34 +627,45 @@ export default function Options() {
             </p>
           </div>
 
-          {(activeTab === 'overview' || activeTab === 'site_list' || activeTab === 'compare') && (
-            <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-              <button
-                onClick={() => setDateRange('today')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  dateRange === 'today' ? 'bg-[#2563EB] text-white' : 'text-[#64748B] hover:text-slate-900'
-                }`}
-              >
-                今日
-              </button>
-              <button
-                onClick={() => setDateRange('7days')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  dateRange === '7days' ? 'bg-[#2563EB] text-white' : 'text-[#64748B] hover:text-slate-900'
-                }`}
-              >
-                近7天
-              </button>
-              <button
-                onClick={() => setDateRange('30days')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  dateRange === '30days' ? 'bg-[#2563EB] text-white' : 'text-[#64748B] hover:text-slate-900'
-                }`}
-              >
-                近30天
-              </button>
-            </div>
-          )}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleRefresh}
+              className="bg-white hover:bg-slate-50 border border-slate-200 hover:border-[#2563EB]/50 text-slate-700 hover:text-[#2563EB] rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5 active:scale-95"
+              title="刷新并同步最新时间数据"
+            >
+              <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-[#2563EB]' : ''}`} />
+              <span>刷新数据</span>
+            </button>
+
+            {(activeTab === 'overview' || activeTab === 'site_list' || activeTab === 'compare') && (
+              <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                <button
+                  onClick={() => setDateRange('today')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    dateRange === 'today' ? 'bg-[#2563EB] text-white' : 'text-[#64748B] hover:text-slate-900'
+                  }`}
+                >
+                  今日
+                </button>
+                <button
+                  onClick={() => setDateRange('7days')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    dateRange === '7days' ? 'bg-[#2563EB] text-white' : 'text-[#64748B] hover:text-slate-900'
+                  }`}
+                >
+                  近7天
+                </button>
+                <button
+                  onClick={() => setDateRange('30days')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    dateRange === '30days' ? 'bg-[#2563EB] text-white' : 'text-[#64748B] hover:text-slate-900'
+                  }`}
+                >
+                  近30天
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Tab 1: Overview */}
@@ -682,7 +704,7 @@ export default function Options() {
               </div>
             </div>
 
-            {/* ★核心重点图表：网站使用时间对比折线图 (横轴为网站域名，纵轴为使用时间) */}
+            {/* 网站使用时间对比折线图 (横轴为网站域名，纵轴为使用时间) */}
             <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
