@@ -15,12 +15,16 @@ import {
   Globe,
   TrendingUp,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  List,
+  Search,
+  ArrowUpDown,
+  ExternalLink
 } from 'lucide-react';
 import { getVisitLogsByDateRange, getSettings, saveSettings, clearAllLogs, getLocalDateStr, cleanDomain } from '../storage/db';
 import { PageVisitRecord, AppSettings, DomainStats } from '../storage/types';
 
-type TabType = 'overview' | 'site_detail' | 'compare' | 'settings';
+type TabType = 'overview' | 'site_list' | 'site_detail' | 'compare' | 'settings';
 
 function formatMs(ms: number): string {
   if (!ms || ms <= 0) return '0秒';
@@ -45,7 +49,8 @@ function formatTimestamp(ts: number): string {
 
 export default function Options() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days'>('7days');
+  // 1. 默认展示今天的
+  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days'>('today');
   const [logs, setLogs] = useState<PageVisitRecord[]>([]);
   const [settings, setSettingsState] = useState<AppSettings>({
     idleThresholdSeconds: 180,
@@ -57,8 +62,12 @@ export default function Options() {
   const [compareDomain, setCompareDomain] = useState<string>('');
   const [newBlacklistItem, setNewBlacklistItem] = useState<string>('');
 
-  // 控制表格行展开状态
+  // 控制单站点表格行展开状态
   const [expandedUrls, setExpandedUrls] = useState<Record<string, boolean>>({});
+
+  // 完整网站列表页面的搜索与排序状态
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'active' | 'open' | 'visits' | 'focus'>('active');
 
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'FLUSH_NOW' }, () => {
@@ -101,27 +110,95 @@ export default function Options() {
     }));
   }
 
+  function handleJumpToDetail(domain: string) {
+    setSelectedDomain(domain);
+    setActiveTab('site_detail');
+  }
+
   // 统计指标
   const totalOpenMs = logs.reduce((acc, cur) => acc + cur.openTimeMs, 0);
   const totalActiveMs = logs.reduce((acc, cur) => acc + cur.activeTimeMs, 0);
   const focusScore = totalOpenMs > 0 ? Math.min(100, Math.round((totalActiveMs / totalOpenMs) * 100)) : 0;
 
-  // 域名聚合 (统一清洗 www. 前缀)
-  const domainMap: Record<string, { open: number; active: number }> = {};
+  // 域名全局聚合 (统一清洗 www. 前缀)
+  const domainMap: Record<
+    string,
+    {
+      title: string;
+      open: number;
+      active: number;
+      visits: number;
+      urls: Set<string>;
+    }
+  > = {};
+
   logs.forEach((log) => {
     const domainKey = cleanDomain(log.domain);
     if (!domainMap[domainKey]) {
-      domainMap[domainKey] = { open: 0, active: 0 };
+      domainMap[domainKey] = {
+        title: log.title || domainKey,
+        open: 0,
+        active: 0,
+        visits: 0,
+        urls: new Set(),
+      };
     }
     domainMap[domainKey].open += log.openTimeMs;
     domainMap[domainKey].active += log.activeTimeMs;
+    domainMap[domainKey].visits += 1;
+    domainMap[domainKey].urls.add(log.url);
+
+    if (log.title && log.title !== domainKey) {
+      domainMap[domainKey].title = log.title;
+    }
   });
 
-  const domainStatsList: DomainStats[] = Object.entries(domainMap)
-    .map(([domain, stats]) => ({
+  // 转换成完整的网站列表项目
+  interface SiteListItem {
+    domain: string;
+    title: string;
+    openTimeMs: number;
+    activeTimeMs: number;
+    visits: number;
+    urlCount: number;
+    focusRate: number;
+    faviconUrl: string;
+  }
+
+  const fullSiteList: SiteListItem[] = Object.entries(domainMap).map(([domain, stats]) => {
+    const focusRate = stats.open > 0 ? Math.min(100, Math.round((stats.active / stats.open) * 100)) : 0;
+    return {
       domain,
+      title: stats.title,
       openTimeMs: stats.open,
       activeTimeMs: stats.active,
+      visits: stats.visits,
+      urlCount: stats.urls.size,
+      focusRate,
+      faviconUrl: `https://www.google.com/s2/favicons?domain=${domain}&sz=32`,
+    };
+  });
+
+  // 列表过滤与排序
+  const filteredSiteList = fullSiteList
+    .filter(
+      (item) =>
+        item.domain.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.title.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy === 'active') return b.activeTimeMs - a.activeTimeMs;
+      if (sortBy === 'open') return b.openTimeMs - a.openTimeMs;
+      if (sortBy === 'visits') return b.visits - a.visits;
+      if (sortBy === 'focus') return b.focusRate - a.focusRate;
+      return 0;
+    });
+
+  const domainStatsList: DomainStats[] = fullSiteList
+    .map((s) => ({
+      domain: s.domain,
+      openTimeMs: s.openTimeMs,
+      activeTimeMs: s.activeTimeMs,
       lastVisited: Date.now(),
     }))
     .sort((a, b) => b.activeTimeMs - a.activeTimeMs);
@@ -374,6 +451,18 @@ export default function Options() {
             </button>
 
             <button
+              onClick={() => setActiveTab('site_list')}
+              className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                activeTab === 'site_list'
+                  ? 'bg-[#2563EB] text-white shadow-md shadow-blue-500/20'
+                  : 'text-[#64748B] hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              <span>网站列表明细</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('site_detail')}
               className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all ${
                 activeTab === 'site_detail'
@@ -382,7 +471,7 @@ export default function Options() {
               }`}
             >
               <Layers className="w-4 h-4" />
-              <span>站点深度下钻</span>
+              <span>单站点深度下钻</span>
             </button>
 
             <button
@@ -423,6 +512,7 @@ export default function Options() {
           <div>
             <h2 className="text-xl font-bold text-slate-900">
               {activeTab === 'overview' && '概览与多维度趋势'}
+              {activeTab === 'site_list' && '全量网站信息与访问列表'}
               {activeTab === 'site_detail' && '单站点深度分析与切页流水'}
               {activeTab === 'compare' && '跨时间段比对'}
               {activeTab === 'settings' && '偏好设置与数据管理'}
@@ -432,7 +522,7 @@ export default function Options() {
             </p>
           </div>
 
-          {activeTab === 'overview' && (
+          {(activeTab === 'overview' || activeTab === 'site_list') && (
             <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
               <button
                 onClick={() => setDateRange('today')}
@@ -536,7 +626,129 @@ export default function Options() {
           </div>
         )}
 
-        {/* Tab 2: Site Detail */}
+        {/* Tab 2: Site List (新增全量网站列表页面) */}
+        {activeTab === 'site_list' && (
+          <div className="space-y-6">
+            {/* Search and Sort Toolbar */}
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex items-center justify-between gap-4">
+              <div className="flex-1 relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="搜索网站名称或域名 (如: douyin.com)..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <ArrowUpDown className="w-4 h-4 text-[#64748B]" />
+                <span className="text-xs font-bold text-[#64748B]">排序规则:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#2563EB]"
+                >
+                  <option value="active">按实际活跃时间</option>
+                  <option value="open">按总驻留时间</option>
+                  <option value="visits">按访问/切换次数</option>
+                  <option value="focus">按专注率</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Site Directory Table */}
+            <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-slate-900">
+                  完整网站访问明细 (共 {filteredSiteList.length} 个网站)
+                </h3>
+              </div>
+
+              {filteredSiteList.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 text-xs font-medium">
+                  暂无匹配的网站数据
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-[#64748B] font-bold">
+                      <tr>
+                        <th className="p-3.5 rounded-l-xl">网站图标与名称</th>
+                        <th className="p-3.5">网站域名 / 网址</th>
+                        <th className="p-3.5">访问/切换次数</th>
+                        <th className="p-3.5">实际活跃时间</th>
+                        <th className="p-3.5">总驻留时间</th>
+                        <th className="p-3.5">专注率</th>
+                        <th className="p-3.5 rounded-r-xl text-center">快捷操作</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredSiteList.map((site) => (
+                        <tr key={site.domain} className="hover:bg-slate-50 transition-colors">
+                          <td className="p-3.5 font-semibold text-slate-800">
+                            <div className="flex items-center space-x-3">
+                              <img
+                                src={site.faviconUrl}
+                                alt=""
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = 'none';
+                                }}
+                                className="w-5 h-5 rounded-md object-contain bg-slate-100"
+                              />
+                              <span className="font-bold text-slate-900 truncate max-w-[180px]">
+                                {site.title}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-3.5 text-[#64748B]">
+                            <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-md font-mono text-[11px]">
+                              {site.domain}
+                            </span>
+                          </td>
+                          <td className="p-3.5 font-bold text-slate-700">
+                            {site.visits} 次 ({site.urlCount} 个页面)
+                          </td>
+                          <td className="p-3.5 font-bold text-[#2563EB]">
+                            {formatMs(site.activeTimeMs)}
+                          </td>
+                          <td className="p-3.5 text-[#64748B] font-medium">
+                            {formatMs(site.openTimeMs)}
+                          </td>
+                          <td className="p-3.5">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-16 bg-slate-100 h-2 rounded-full overflow-hidden">
+                                <div
+                                  className="bg-[#2563EB] h-full rounded-full"
+                                  style={{ width: `${site.focusRate}%` }}
+                                ></div>
+                              </div>
+                              <span className="font-bold text-xs text-slate-700">
+                                {site.focusRate}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-3.5 text-center">
+                            <button
+                              onClick={() => handleJumpToDetail(site.domain)}
+                              className="px-3 py-1.5 bg-[#2563EB]/10 text-[#2563EB] hover:bg-[#2563EB]/20 border border-[#2563EB]/30 rounded-xl font-bold text-[11px] inline-flex items-center space-x-1 transition-all"
+                            >
+                              <span>深度下钻</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Site Detail */}
         {activeTab === 'site_detail' && (
           <div className="space-y-6">
             <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center justify-between">
@@ -692,7 +904,7 @@ export default function Options() {
           </div>
         )}
 
-        {/* Tab 3: Compare */}
+        {/* Tab 4: Compare */}
         {activeTab === 'compare' && (
           <div className="space-y-6">
             <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center justify-between">
@@ -747,7 +959,7 @@ export default function Options() {
           </div>
         )}
 
-        {/* Tab 4: Settings */}
+        {/* Tab 5: Settings */}
         {activeTab === 'settings' && (
           <div className="space-y-6 max-w-4xl">
             <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
