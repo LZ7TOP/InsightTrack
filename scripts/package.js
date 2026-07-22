@@ -22,7 +22,9 @@ const outputPath = path.join(releasesDir, zipName)
 console.log(`📦 正在打包 Chrome 扩展到 releases/${zipName} ...`)
 
 if (process.platform === 'win32') {
-  execSync(`powershell Compress-Archive -Path "${distDir}\\*" -DestinationPath "${outputPath}" -Force`)
+  execSync(
+    `powershell Compress-Archive -Path "${distDir}\\*" -DestinationPath "${outputPath}" -Force`,
+  )
 } else {
   execSync(`cd "${distDir}" && zip -r "${outputPath}" .`)
 }

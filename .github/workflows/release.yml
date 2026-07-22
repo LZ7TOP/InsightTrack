@@ -30,13 +30,23 @@ jobs:
       - name: Build & Package Extension
         run: npm run package
 
+      - name: Check Changelog File
+        id: changelog
+        run: |
+          if [ -f "changelogs/${{ github.ref_name }}.md" ]; then
+            echo "has_changelog=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changelog=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create GitHub Release & Upload Asset
         uses: softprops/action-gh-release@v2
         with:
           files: releases/*.zip
           name: Release ${{ github.ref_name }}
+          body_path: ${{ steps.changelog.outputs.has_changelog == 'true' && format('changelogs/{0}.md', github.ref_name) || '' }}
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: ${{ steps.changelog.outputs.has_changelog != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
