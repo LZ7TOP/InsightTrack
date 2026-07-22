@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock, ShieldOff, ShieldCheck, ExternalLink, Activity, Eye, RotateCw } from 'lucide-react';
+import { ShieldOff, ShieldCheck, ExternalLink, Activity, Eye, RotateCw } from 'lucide-react';
 import { getVisitLogsByDateRange, getSettings, saveSettings, getLocalDateStr, cleanDomain } from '../storage/db';
 import { DomainStats } from '../storage/types';
 
@@ -163,9 +163,7 @@ export default function Popup() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
         <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#2563EB] flex items-center justify-center shadow-md shadow-blue-500/20">
-            <Clock className="w-4 h-4 text-white" />
-          </div>
+          <img src="/logo.svg" alt="InsightTrack Logo" className="w-8 h-8 object-contain drop-shadow-sm" />
           <div>
             <h1 className="font-bold text-sm tracking-tight text-slate-900">InsightTrack</h1>
             <span className="text-[11px] text-[#64748B]">今日浏览分析</span>

@@ -26,9 +26,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     <aside className='w-64 bg-white border-r border-slate-200 p-6 flex flex-col justify-between select-none shadow-sm'>
       <div>
         <div className='flex items-center space-x-3 mb-8'>
-          <div className='w-9 h-9 rounded-xl bg-[#2563EB] flex items-center justify-center shadow-md shadow-blue-500/20'>
-            <Clock className='w-5 h-5 text-white' />
-          </div>
+          <img src='/logo.svg' alt='InsightTrack Logo' className='w-9 h-9 object-contain drop-shadow-sm' />
           <div>
             <h1 className='font-bold text-base tracking-tight text-slate-900'>
               InsightTrack

@@ -25,6 +25,7 @@
 **InsightTrack** 是一款由 **LZ7工作室** 开发并开源的现代 Chromium 浏览器扩展，致力于帮助用户量化、分析和提升自己的网页浏览与时间利用效率。
 
 不同于传统浏览器历史记录只盲目记录「访问了什么」，InsightTrack 能精确追踪区分：
+
 - 💡 **实际活跃时间**：鼠标移动、键盘输入、滚动页面等真实交互的时段
 - ⏱️ **页面驻留时间**：标签页打开在浏览器中的挂机与后台总时长
 
@@ -92,17 +93,17 @@
 
 ## 🛠️ 技术栈
 
-| 层面           | 技术                                 |
-| -------------- | ------------------------------------ |
-| **扩展规范**   | Chrome Manifest V3                   |
-| **前端框架**   | React 18 + TypeScript 5              |
-| **构建工具**   | Vite 5                               |
-| **样式方案**   | TailwindCSS 3                        |
-| **数据可视化** | ECharts 5 (`echarts-for-react`)      |
-| **图标库**     | Lucide React                         |
-| **本地存储**   | IndexedDB (`idb` 库封装)             |
-| **后台引擎**   | Service Worker (Manifest V3 后台脚本)|
-| **内容脚本**   | Content Script (网页交互行为监听)    |
+| 层面           | 技术                                  |
+| -------------- | ------------------------------------- |
+| **扩展规范**   | Chrome Manifest V3                    |
+| **前端框架**   | React 18 + TypeScript 5               |
+| **构建工具**   | Vite 5                                |
+| **样式方案**   | TailwindCSS 3                         |
+| **数据可视化** | ECharts 5 (`echarts-for-react`)       |
+| **图标库**     | Lucide React                          |
+| **本地存储**   | IndexedDB (`idb` 库封装)              |
+| **后台引擎**   | Service Worker (Manifest V3 后台脚本) |
+| **内容脚本**   | Content Script (网页交互行为监听)     |
 
 ---
 
