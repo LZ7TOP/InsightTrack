@@ -87,52 +87,65 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         </nav>
       </div>
 
-      {/* 底部独立区域：项目介绍菜单与工作室品牌精致整合卡片 */}
-      <div className='pt-4 border-t border-slate-100 space-y-2 shrink-0'>
-        {/* 独立底部的 项目介绍 菜单项 */}
+      {/* 底部独立区域：精美卡片式 '项目介绍' 菜单与原版工作室品牌脚标 */}
+      <div className='pt-4 border-t border-slate-100 space-y-3 shrink-0'>
+        {/* 独立精美微卡片样式的 '项目介绍' 入口 */}
         <button
           onClick={() => onTabChange('about')}
           title={isCollapsed ? '项目介绍' : ''}
           className={`w-full flex items-center ${
-            isCollapsed ? 'justify-center px-0' : 'space-x-3 px-3.5'
-          } py-2.5 rounded-xl font-bold text-xs transition-all ${
+            isCollapsed ? 'justify-center px-0' : 'justify-between px-3.5'
+          } py-2.5 rounded-xl font-bold text-xs transition-all border ${
             activeTab === 'about'
-              ? 'bg-[#2563EB] text-white shadow-md shadow-blue-500/20'
-              : 'text-[#64748B] hover:bg-slate-100 hover:text-slate-900'
+              ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-md shadow-blue-500/20'
+              : 'bg-slate-50/80 hover:bg-blue-50/60 text-slate-700 hover:text-[#2563EB] border-slate-200/80 hover:border-blue-200/90 shadow-sm'
           }`}
         >
-          <Info className='w-4 h-4 shrink-0' />
-          {!isCollapsed && <span className='truncate animate-in fade-in duration-150'>项目介绍</span>}
+          <div className='flex items-center space-x-2.5 truncate'>
+            <Info
+              className={`w-4 h-4 shrink-0 transition-colors ${
+                activeTab === 'about' ? 'text-white' : 'text-[#2563EB]'
+              }`}
+            />
+            {!isCollapsed && <span className='truncate'>项目介绍</span>}
+          </div>
+          {!isCollapsed && (
+            <ChevronRight
+              className={`w-3.5 h-3.5 shrink-0 transition-transform ${
+                activeTab === 'about' ? 'text-white/80' : 'text-slate-400'
+              }`}
+            />
+          )}
         </button>
 
-        {/* LZ7工作室 品牌与版本号整合卡片 */}
-        {!isCollapsed ? (
-          <a
-            href='https://github.com/LZ7TOP'
-            target='_blank'
-            rel='noreferrer'
-            className='flex items-center justify-between px-3.5 py-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl text-slate-600 transition-all border border-slate-200/70 group'
-            title='访问 LZ7工作室 GitHub (https://github.com/LZ7TOP)'
-          >
-            <div className='flex items-center space-x-2 truncate'>
-              <img src='/logo_black.png' alt='LZ7工作室' className='w-4 h-4 object-contain rounded-sm shrink-0' />
-              <span className='text-xs font-bold text-slate-800 group-hover:text-[#2563EB] transition-colors truncate'>
-                LZ7工作室
-              </span>
-            </div>
-            <span className='text-[10px] font-semibold text-slate-400 shrink-0'>v1.0.0</span>
-          </a>
-        ) : (
-          <a
-            href='https://github.com/LZ7TOP'
-            target='_blank'
-            rel='noreferrer'
-            className='flex items-center justify-center p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl transition-all border border-slate-200/70'
-            title='LZ7工作室 (https://github.com/LZ7TOP)'
-          >
-            <img src='/logo_black.png' alt='LZ7工作室' className='w-4 h-4 object-contain rounded-sm' />
-          </a>
-        )}
+        {/* 原版 LZ7工作室 居中品牌脚标 */}
+        <div className='text-[11px] font-semibold text-[#64748B] text-center flex flex-col items-center space-y-2 pt-1'>
+          {!isCollapsed ? (
+            <>
+              <div className='text-slate-400 font-medium'>InsightTrack v1.0.0</div>
+              <a
+                href='https://github.com/LZ7TOP'
+                target='_blank'
+                rel='noreferrer'
+                className='inline-flex items-center space-x-2 px-3.5 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-700 font-bold transition-all border border-slate-200/80 shadow-sm group'
+                title='访问 LZ7工作室 GitHub (https://github.com/LZ7TOP)'
+              >
+                <img src='/logo_black.png' alt='LZ7工作室' className='w-4 h-4 object-contain rounded-sm' />
+                <span className='group-hover:text-[#2563EB] transition-colors'>LZ7工作室</span>
+              </a>
+            </>
+          ) : (
+            <a
+              href='https://github.com/LZ7TOP'
+              target='_blank'
+              rel='noreferrer'
+              className='p-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-slate-200/80 shadow-sm'
+              title='LZ7工作室 (https://github.com/LZ7TOP)'
+            >
+              <img src='/logo_black.png' alt='LZ7工作室' className='w-4 h-4 object-contain rounded-sm' />
+            </a>
+          )}
+        </div>
       </div>
     </aside>
   )
