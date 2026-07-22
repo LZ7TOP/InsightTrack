@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { RotateCw, CheckCircle2 } from 'lucide-react'
+import { RotateCw, CheckCircle2, Calendar } from 'lucide-react'
 import {
   getVisitLogsByDateRange,
   getSettings,
@@ -25,9 +25,12 @@ import {
 
 export default function Options() {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
-  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days'>(
+  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days' | 'custom'>(
     'today',
   )
+  const [customStartDate, setCustomStartDate] = useState<string>(getLocalDateStr(new Date()))
+  const [customEndDate, setCustomEndDate] = useState<string>(getLocalDateStr(new Date()))
+
   const [logs, setLogs] = useState<PageVisitRecord[]>([])
   const [settings, setSettingsState] = useState<AppSettings>({
     enableIdleDetection: false,
@@ -50,7 +53,7 @@ export default function Options() {
     chrome.runtime.sendMessage({ type: 'FLUSH_NOW' }, () => {
       loadData()
     })
-  }, [dateRange])
+  }, [dateRange, customStartDate, customEndDate])
 
   // 定时自动刷新仪表盘数据
   useEffect(() => {
@@ -63,22 +66,36 @@ export default function Options() {
     }, intervalMs)
 
     return () => clearInterval(timer)
-  }, [settings.autoRefresh, settings.autoRefreshIntervalSeconds, dateRange])
+  }, [settings.autoRefresh, settings.autoRefreshIntervalSeconds, dateRange, customStartDate, customEndDate])
 
   async function loadData() {
     const end = new Date()
     const start = new Date()
 
+    let startStr = getLocalDateStr(start)
+    let endStr = getLocalDateStr(end)
+
     if (dateRange === 'today') {
-      // 今日
+      startStr = getLocalDateStr(start)
+      endStr = getLocalDateStr(end)
     } else if (dateRange === '7days') {
       start.setDate(end.getDate() - 6)
+      startStr = getLocalDateStr(start)
+      endStr = getLocalDateStr(end)
     } else if (dateRange === '30days') {
       start.setDate(end.getDate() - 29)
+      startStr = getLocalDateStr(start)
+      endStr = getLocalDateStr(end)
+    } else if (dateRange === 'custom') {
+      startStr = customStartDate || getLocalDateStr(start)
+      endStr = customEndDate || getLocalDateStr(end)
+      // 若开始日期晚于结束日期，自动调整
+      if (startStr > endStr) {
+        const tmp = startStr
+        startStr = endStr
+        endStr = tmp
+      }
     }
-
-    const startStr = getLocalDateStr(start)
-    const endStr = getLocalDateStr(end)
 
     const fetchedLogs = await getVisitLogsByDateRange(startStr, endStr)
     setLogs(fetchedLogs)
@@ -174,7 +191,7 @@ export default function Options() {
               <span>刷新数据</span>
             </button>
 
-            <div className='flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm'>
+            <div className='flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm space-x-1'>
               <button
                 onClick={() => setDateRange('today')}
                 className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
@@ -205,7 +222,36 @@ export default function Options() {
               >
                 近30天
               </button>
+              <button
+                onClick={() => setDateRange('custom')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  dateRange === 'custom'
+                    ? 'bg-[#2563EB] text-white shadow-sm'
+                    : 'text-[#64748B] hover:text-slate-900'
+                }`}
+              >
+                自定义区间
+              </button>
             </div>
+
+            {dateRange === 'custom' && (
+              <div className='flex items-center space-x-2 bg-white border border-slate-200 rounded-xl px-3 py-1 text-xs shadow-sm animate-in fade-in duration-150'>
+                <Calendar className='w-3.5 h-3.5 text-[#2563EB]' />
+                <input
+                  type='date'
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className='bg-transparent text-slate-800 font-bold focus:outline-none cursor-pointer'
+                />
+                <span className='text-slate-400 font-bold'>至</span>
+                <input
+                  type='date'
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className='bg-transparent text-slate-800 font-bold focus:outline-none cursor-pointer'
+                />
+              </div>
+            )}
           </div>
         </header>
 
