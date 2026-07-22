@@ -358,14 +358,14 @@ export default function OverviewTab({
           </span>
         </div>
 
-        <div className='overflow-x-auto'>
+        <div className='max-h-[360px] overflow-y-auto border border-slate-100 rounded-xl relative'>
           <table className='w-full text-left text-xs border-collapse'>
-            <thead>
-              <tr className='border-b border-slate-200 text-[#64748B] font-semibold bg-slate-50/50'>
-                <th className='py-3 px-4'>网站图标与名称</th>
-                <th className='py-3 px-4'>网站域名</th>
-                <th className='py-3 px-4'>实际活跃时间及对比占比</th>
-                <th className='py-3 px-4'>总驻留时间及对比占比</th>
+            <thead className='sticky top-0 z-10 bg-slate-50 shadow-sm'>
+              <tr className='border-b border-slate-200 text-[#64748B] font-semibold'>
+                <th className='py-3 px-4 bg-slate-50'>网站图标与名称</th>
+                <th className='py-3 px-4 bg-slate-50'>网站域名</th>
+                <th className='py-3 px-4 bg-slate-50'>实际活跃时间及对比占比</th>
+                <th className='py-3 px-4 bg-slate-50'>总驻留时间及对比占比</th>
               </tr>
             </thead>
             <tbody className='divide-y divide-slate-100'>
@@ -392,42 +392,42 @@ export default function OverviewTab({
                     {/* 网站域名 */}
                     <td className='py-3 px-4 font-mono text-[#64748B]'>{d.domain}</td>
 
-                    {/* 实际活跃时间及对比占比 */}
+                    {/* 实际活跃时间及对比占比 (上下结构) */}
                     <td className='py-3 px-4'>
-                      <div className='flex items-center space-x-3'>
-                        <span className='font-bold text-[#2563EB] font-mono min-w-[70px]'>
-                          {formatMs(d.activeTimeMs)}
-                        </span>
-                        <div className='flex items-center space-x-1.5 flex-1 max-w-[120px]'>
-                          <div className='w-full h-1.5 bg-slate-100 rounded-full overflow-hidden'>
-                            <div
-                              className='h-full bg-[#2563EB] rounded-full'
-                              style={{ width: `${Math.min(100, Number(activeRatio))}%` }}
-                            />
-                          </div>
-                          <span className='text-[11px] font-bold text-slate-600 font-mono w-10 text-right'>
+                      <div className='flex flex-col space-y-1.5 max-w-[160px]'>
+                        <div className='flex items-center justify-between text-xs'>
+                          <span className='font-bold text-[#2563EB] font-mono'>
+                            {formatMs(d.activeTimeMs)}
+                          </span>
+                          <span className='text-[11px] font-bold text-slate-500 font-mono ml-2'>
                             {activeRatio}%
                           </span>
+                        </div>
+                        <div className='w-full h-1.5 bg-slate-100 rounded-full overflow-hidden'>
+                          <div
+                            className='h-full bg-[#2563EB] rounded-full transition-all duration-300'
+                            style={{ width: `${Math.min(100, Number(activeRatio))}%` }}
+                          />
                         </div>
                       </div>
                     </td>
 
-                    {/* 总驻留时间及对比占比 */}
+                    {/* 总驻留时间及对比占比 (上下结构) */}
                     <td className='py-3 px-4'>
-                      <div className='flex items-center space-x-3'>
-                        <span className='font-bold text-slate-700 font-mono min-w-[70px]'>
-                          {formatMs(d.openTimeMs)}
-                        </span>
-                        <div className='flex items-center space-x-1.5 flex-1 max-w-[120px]'>
-                          <div className='w-full h-1.5 bg-slate-100 rounded-full overflow-hidden'>
-                            <div
-                              className='h-full bg-slate-400 rounded-full'
-                              style={{ width: `${Math.min(100, Number(openRatio))}%` }}
-                            />
-                          </div>
-                          <span className='text-[11px] font-bold text-slate-500 font-mono w-10 text-right'>
+                      <div className='flex flex-col space-y-1.5 max-w-[160px]'>
+                        <div className='flex items-center justify-between text-xs'>
+                          <span className='font-bold text-slate-700 font-mono'>
+                            {formatMs(d.openTimeMs)}
+                          </span>
+                          <span className='text-[11px] font-bold text-slate-500 font-mono ml-2'>
                             {openRatio}%
                           </span>
+                        </div>
+                        <div className='w-full h-1.5 bg-slate-100 rounded-full overflow-hidden'>
+                          <div
+                            className='h-full bg-slate-400 rounded-full transition-all duration-300'
+                            style={{ width: `${Math.min(100, Number(openRatio))}%` }}
+                          />
                         </div>
                       </div>
                     </td>
