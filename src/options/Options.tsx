@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { RotateCw, CheckCircle2, Calendar } from 'lucide-react'
+import { RotateCw, CheckCircle2 } from 'lucide-react'
 import {
   getVisitLogsByDateRange,
   getSettings,
@@ -23,11 +23,11 @@ import {
   formatMs,
 } from './utils'
 
+import DateRangePicker, { DateRangeType } from '../components/DateRangePicker'
+
 export default function Options() {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
-  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days' | 'custom'>(
-    'today',
-  )
+  const [dateRange, setDateRange] = useState<DateRangeType>('today')
   const [customStartDate, setCustomStartDate] = useState<string>(getLocalDateStr(new Date()))
   const [customEndDate, setCustomEndDate] = useState<string>(getLocalDateStr(new Date()))
 
@@ -125,18 +125,10 @@ export default function Options() {
 
   function showFlashMessage(msg: string) {
     setStatusMessage(msg)
-    setTimeout(() => setStatusMessage(''), 2500)
+    setTimeout(() => setStatusMessage(''), 3000)
   }
 
-  // 计算全局指标
-  const totalOpenMs = logs.reduce((acc, cur) => acc + cur.openTimeMs, 0)
-  const totalActiveMs = logs.reduce((acc, cur) => acc + cur.activeTimeMs, 0)
-  const focusScore =
-    totalOpenMs > 0
-      ? Math.min(100, Math.round((totalActiveMs / totalOpenMs) * 100))
-      : 0
-
-  // 聚合域名映射
+  // 聚合逻辑
   const domainMap = buildDomainMap(logs, cleanDomain)
   const siteList = buildSiteList(domainMap)
   const domainStatsList = buildDomainStatsList(siteList)
@@ -148,15 +140,20 @@ export default function Options() {
     subLabel: formatMs(d.activeTimeMs),
   }))
 
+  const totalActiveMs = logs.reduce((sum, item) => sum + item.activeTimeMs, 0)
+  const totalOpenMs = logs.reduce((sum, item) => sum + item.openTimeMs, 0)
+  const focusScore =
+    totalOpenMs > 0 ? Math.round((totalActiveMs / totalOpenMs) * 100) : 0
+
   return (
     <div className='flex h-screen bg-[#F0F2F8] text-slate-800 font-sans overflow-hidden'>
       {/* 模块化 Sidebar 组件 */}
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* 右侧主内容区 */}
-      <main className='flex-1 overflow-y-auto p-8'>
-        {/* 顶部 Header & 时间筛选工具栏 */}
-        <header className='flex items-center justify-between mb-8'>
+      <main className='flex-1 overflow-y-auto relative flex flex-col'>
+        {/* 固定吸顶 Header & 时间筛选工具栏 */}
+        <header className='sticky top-0 z-30 bg-[#F0F2F8]/95 backdrop-blur-md px-8 py-5 border-b border-slate-200/60 flex items-center justify-between shadow-sm shrink-0'>
           <div>
             <h2 className='text-2xl font-bold text-slate-900 tracking-tight'>
               {activeTab === 'overview' && '概览与多维度趋势分析'}
@@ -191,67 +188,17 @@ export default function Options() {
               <span>刷新数据</span>
             </button>
 
-            <div className='flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm space-x-1'>
-              <button
-                onClick={() => setDateRange('today')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                  dateRange === 'today'
-                    ? 'bg-[#2563EB] text-white shadow-sm'
-                    : 'text-[#64748B] hover:text-slate-900'
-                }`}
-              >
-                今日
-              </button>
-              <button
-                onClick={() => setDateRange('7days')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                  dateRange === '7days'
-                    ? 'bg-[#2563EB] text-white shadow-sm'
-                    : 'text-[#64748B] hover:text-slate-900'
-                }`}
-              >
-                近7天
-              </button>
-              <button
-                onClick={() => setDateRange('30days')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                  dateRange === '30days'
-                    ? 'bg-[#2563EB] text-white shadow-sm'
-                    : 'text-[#64748B] hover:text-slate-900'
-                }`}
-              >
-                近30天
-              </button>
-              <button
-                onClick={() => setDateRange('custom')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                  dateRange === 'custom'
-                    ? 'bg-[#2563EB] text-white shadow-sm'
-                    : 'text-[#64748B] hover:text-slate-900'
-                }`}
-              >
-                自定义区间
-              </button>
-            </div>
-
-            {dateRange === 'custom' && (
-              <div className='flex items-center space-x-2 bg-white border border-slate-200 rounded-xl px-3 py-1 text-xs shadow-sm animate-in fade-in duration-150'>
-                <Calendar className='w-3.5 h-3.5 text-[#2563EB]' />
-                <input
-                  type='date'
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className='bg-transparent text-slate-800 font-bold focus:outline-none cursor-pointer'
-                />
-                <span className='text-slate-400 font-bold'>至</span>
-                <input
-                  type='date'
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className='bg-transparent text-slate-800 font-bold focus:outline-none cursor-pointer'
-                />
-              </div>
-            )}
+            {/* 自定义弹出下拉式时间范围选择器 */}
+            <DateRangePicker
+              dateRange={dateRange}
+              startDate={customStartDate}
+              endDate={customEndDate}
+              onChange={(range, s, e) => {
+                setDateRange(range)
+                setCustomStartDate(s)
+                setCustomEndDate(e)
+              }}
+            />
           </div>
         </header>
 
