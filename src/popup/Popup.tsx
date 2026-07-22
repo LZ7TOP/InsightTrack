@@ -278,12 +278,18 @@ export default function Popup() {
               return (
                 <div
                   key={item.domain}
-                  className='bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm text-xs space-y-1.5'
+                  className='bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm text-xs flex items-center space-x-2.5'
                 >
-                  <div className='flex justify-between items-center'>
-                    <div className='flex items-center space-x-2 min-w-0 max-w-[210px]'>
-                      <FaviconImg domain={item.domain} className='w-4 h-4 shrink-0' />
-                      <div className='flex items-center space-x-1 truncate text-xs'>
+                  {/* 最左侧：单独列图标 */}
+                  <FaviconImg
+                    domain={item.domain}
+                    className='w-5 h-5 rounded object-contain shrink-0'
+                  />
+
+                  {/* 右侧区域：上（标题 + 域名 + 时长），下（进度条） */}
+                  <div className='flex-1 min-w-0 space-y-1.5'>
+                    <div className='flex justify-between items-center'>
+                      <div className='flex items-center space-x-1 truncate max-w-[190px]'>
                         <span
                           className='font-semibold text-slate-800 truncate'
                           title={displayTitle}
@@ -294,16 +300,17 @@ export default function Popup() {
                           ({item.domain})
                         </span>
                       </div>
+                      <span className='text-[#64748B] font-mono text-[11px] font-bold shrink-0 ml-2'>
+                        {formatDuration(item.activeTimeMs)}
+                      </span>
                     </div>
-                    <span className='text-[#64748B] font-mono text-[11px] font-bold shrink-0 ml-2'>
-                      {formatDuration(item.activeTimeMs)}
-                    </span>
-                  </div>
-                  <div className='w-full bg-slate-100 h-1.5 rounded-full overflow-hidden'>
-                    <div
-                      className='bg-[#2563EB] h-full rounded-full transition-all duration-300'
-                      style={{ width: `${percent}%` }}
-                    />
+
+                    <div className='w-full bg-slate-100 h-1.5 rounded-full overflow-hidden'>
+                      <div
+                        className='bg-[#2563EB] h-full rounded-full transition-all duration-300'
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
               )
