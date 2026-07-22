@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Layers,
   CheckCircle2,
+  Globe,
 } from 'lucide-react'
 
 export default function AboutTab() {
@@ -39,20 +40,33 @@ export default function AboutTab() {
           </div>
         </div>
 
-        <a
-          href='https://github.com/LZ7TOP'
-          target='_blank'
-          rel='noreferrer'
-          className='px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center space-x-2 shrink-0'
-        >
-          <img
-            src='/logo_black.png'
-            alt='LZ7工作室'
-            className='w-4 h-4 object-contain rounded-sm invert'
-          />
-          <span>LZ7工作室 GitHub</span>
-          <ExternalLink className='w-3.5 h-3.5 text-slate-400' />
-        </a>
+        <div className='flex items-center space-x-3 shrink-0'>
+          <a
+            href='https://insighttrack.lz7.com.cn'
+            target='_blank'
+            rel='noreferrer'
+            className='px-4 py-2 bg-[#2563EB] hover:bg-blue-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center space-x-2'
+          >
+            <Globe className='w-3.5 h-3.5 text-white' />
+            <span>官方网站</span>
+            <ExternalLink className='w-3.5 h-3.5 text-white/80' />
+          </a>
+
+          <a
+            href='https://github.com/LZ7TOP/InsightTrack'
+            target='_blank'
+            rel='noreferrer'
+            className='px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center space-x-2'
+          >
+            <img
+              src='/logo_black.png'
+              alt='GitHub'
+              className='w-4 h-4 object-contain rounded-sm invert'
+            />
+            <span>GitHub 仓库</span>
+            <ExternalLink className='w-3.5 h-3.5 text-slate-400' />
+          </a>
+        </div>
       </div>
 
       {/* ✨ 项目简介与隐私承诺 */}

@@ -8,6 +8,7 @@
 
 区分「页面驻留时间」与「实际活跃时间」，通过多维可视化图表洞察真实浏览习惯
 
+[![Official Site](https://img.shields.io/badge/Official%20Site-insighttrack.lz7.com.cn-00C853?logo=googlechrome&logoColor=white)](https://insighttrack.lz7.com.cn)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-34A853?logo=google&logoColor=white)](https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3)

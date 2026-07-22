@@ -4,7 +4,7 @@
   "short_name": "InsightTrack",
   "version": "1.0.0",
   "description": "精准追踪并深度可视化分析您的浏览习惯。区分「页面驻留时间」与「实际活跃时间」，洞察真实注意力分配，助力高效时间管理。数据完全本地存储，隐私安全无忧。",
-  "homepage_url": "https://github.com/LZ7TOP/InsightTrack",
+  "homepage_url": "https://insighttrack.lz7.com.cn",
   "permissions": ["tabs", "storage", "alarms", "idle"],
   "host_permissions": ["<all_urls>"],
   "background": {
