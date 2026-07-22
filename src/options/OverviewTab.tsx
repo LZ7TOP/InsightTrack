@@ -1,5 +1,5 @@
 import ReactECharts from 'echarts-for-react'
-import { Activity, Clock, Zap, LineChart } from 'lucide-react'
+import { Activity, Clock, Zap, BarChart3 } from 'lucide-react'
 import { DomainStats } from '../storage/types'
 import { formatMs, DomainAggregation } from './utils'
 
@@ -55,32 +55,40 @@ export default function OverviewTab({
   })
   const sortedDates = Object.keys(dateMap).sort()
 
-  // 网站使用时间对比折线图 (全量网站使用时长对比折线图)
-  const siteNames = domainStatsList.slice(0, 12).map((d) => d.domain)
-  const siteActiveTimes = domainStatsList.slice(0, 12).map((d) => d.activeTimeMs)
-  const siteOpenTimes = domainStatsList.slice(0, 12).map((d) => d.openTimeMs)
+  // 网站使用时间对比柱状图 (全量网站使用时长对比柱状图，两个数据显示在一个柱上，不同颜色区分)
+  const siteList = domainStatsList.slice(0, 12)
+  const siteNames = siteList.map((d) => d.domain)
+  const siteActiveTimes = siteList.map((d) => d.activeTimeMs)
+  // 挂机/后台驻留时间 = openTimeMs - activeTimeMs (保证单柱总高度为总驻留时间)
+  const siteRestTimes = siteList.map((d) => Math.max(0, d.openTimeMs - d.activeTimeMs))
 
   const websiteComparisonChartOption = {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
       formatter: (params: any) => {
-        let res = `<div style="font-weight: bold; margin-bottom: 4px; color: #1E293B;">网站: ${params[0].axisValue}</div>`
+        let res = `<div style="font-weight: bold; margin-bottom: 6px; color: #1E293B; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px;">网站: ${params[0].axisValue}</div>`
+        let totalMs = 0
         params.forEach((p: any) => {
-          res += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 2px;">
+          totalMs += p.value
+          res += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 4px;">
             <span style="color: ${p.color}; font-weight: 600;">${p.marker} ${p.seriesName}</span>
             <b style="color: #0F172A; font-family: monospace;">${formatMs(p.value)}</b>
           </div>`
         })
+        res += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 6px; padding-top: 4px; border-top: 1px dashed #E2E8F0;">
+          <span style="color: #475569; font-weight: 700;">⏱️ 总驻留时间</span>
+          <b style="color: #0F172A; font-family: monospace;">${formatMs(totalMs)}</b>
+        </div>`
         return res
       },
     },
     legend: {
-      data: ['实际活跃时间', '总驻留时间'],
-      textStyle: { color: '#64748B', fontFamily: 'Inter' },
+      data: ['实际活跃时间', '挂机/后台驻留时间'],
+      textStyle: { color: '#64748B', fontFamily: 'Inter', fontSize: 12 },
       top: '0%',
     },
-    grid: { left: '3%', right: '4%', bottom: '12%', containLabel: true },
+    grid: { left: '3%', right: '4%', bottom: '14%', containLabel: true },
     xAxis: {
       type: 'category',
       data: siteNames,
@@ -101,31 +109,25 @@ export default function OverviewTab({
     series: [
       {
         name: '实际活跃时间',
-        type: 'line',
-        smooth: true,
+        type: 'bar',
+        stack: 'total',
+        barWidth: '40%',
         data: siteActiveTimes,
-        itemStyle: { color: '#2563EB' },
-        lineStyle: { width: 3 },
-        symbolSize: 8,
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(37, 99, 235, 0.25)' },
-              { offset: 1, color: 'rgba(37, 99, 235, 0.0)' },
-            ],
-          },
+        itemStyle: {
+          color: '#2563EB',
+          borderRadius: [0, 0, 4, 4],
         },
       },
       {
-        name: '总驻留时间',
-        type: 'line',
-        smooth: true,
-        data: siteOpenTimes,
-        itemStyle: { color: '#64748B' },
-        lineStyle: { width: 2, type: 'dashed' },
-        symbolSize: 6,
+        name: '挂机/后台驻留时间',
+        type: 'bar',
+        stack: 'total',
+        barWidth: '40%',
+        data: siteRestTimes,
+        itemStyle: {
+          color: '#94A3B8',
+          borderRadius: [6, 6, 0, 0],
+        },
       },
     ],
   }
@@ -260,17 +262,17 @@ export default function OverviewTab({
         </div>
       </div>
 
-      {/* 全量网站使用时间对比折线图 */}
+      {/* 全量网站使用时间对比柱状图 */}
       <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm'>
         <div className='flex items-center justify-between mb-4'>
           <div className='flex items-center space-x-2'>
-            <LineChart className='w-5 h-5 text-[#2563EB]' />
+            <BarChart3 className='w-5 h-5 text-[#2563EB]' />
             <h3 className='text-base font-bold text-slate-900'>
-              全量网站使用时长对比折线图 (横轴: 网站域名 / 纵轴: 使用时长)
+              全量网站使用时长对比柱状图 (横轴: 网站域名 / 纵轴: 使用时长)
             </h3>
           </div>
           <span className='text-xs text-[#64748B] font-medium'>
-            直观对比各个网站的实际活跃时间与总驻留时间高低
+            单柱对比：深蓝色表示实际活跃时间，灰色表示挂机/后台驻留时间
           </span>
         </div>
         <ReactECharts option={websiteComparisonChartOption} style={{ height: '320px' }} />
