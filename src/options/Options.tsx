@@ -242,7 +242,6 @@ export default function Options() {
           <CompareTab
             domainStatsList={domainStatsList}
             domainSelectOptions={domainSelectOptions}
-            domainMap={domainMap}
             initialDomain={selectedDomain}
             logs={logs}
           />
