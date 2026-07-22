@@ -1,5 +1,5 @@
 import ReactECharts from 'echarts-for-react'
-import { Activity, Clock, Zap, BarChart3 } from 'lucide-react'
+import { Activity, Clock, Zap } from 'lucide-react'
 import { DomainStats } from '../storage/types'
 import { formatMs, DomainAggregation } from './utils'
 
@@ -54,85 +54,118 @@ export default function OverviewTab({
   })
   const sortedDates = Object.keys(dateMap).sort()
 
-  // 网站使用时间对比柱状图 (高颜值双色嵌套胶囊柱状图：外层底柱表示总驻留时间，内层蓝色渐变柱表示实际活跃时间)
-  const siteList = domainStatsList.slice(0, 12)
-  const siteNames = siteList.map((d) => d.domain)
-  const siteActiveTimes = siteList.map((d) => d.activeTimeMs)
-  const siteOpenTimes = siteList.map((d) => d.openTimeMs)
+  // 1. 实际活跃时间对比图数据 (横向条形图，按 activeTimeMs 降序)
+  const sortedByActive = [...domainStatsList]
+    .sort((a, b) => b.activeTimeMs - a.activeTimeMs)
+    .slice(0, 10)
+  const activeDomains = sortedByActive.map((d) => d.domain)
+  const activeValues = sortedByActive.map((d) => d.activeTimeMs)
 
-  const websiteComparisonChartOption = {
+  const activeComparisonChartOption = {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
       formatter: (params: any) => {
-        let res = `<div style="font-weight: bold; margin-bottom: 6px; color: #1E293B; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px;">网站: ${params[0].axisValue}</div>`
-        params.forEach((p: any) => {
-          const colorHex = typeof p.color === 'string' ? p.color : '#2563EB'
-          res += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 4px;">
-            <span style="color: ${colorHex}; font-weight: 600;">${p.marker} ${p.seriesName}</span>
-            <b style="color: #0F172A; font-family: monospace;">${formatMs(p.value)}</b>
-          </div>`
-        })
-        return res
+        const p = params[0]
+        return `<div style="font-weight: bold; margin-bottom: 4px; color: #1E293B; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px;">${p.name}</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 4px;">
+          <span style="color: #2563EB; font-weight: 600;">${p.marker} 实际活跃时间</span>
+          <b style="color: #0F172A; font-family: monospace;">${formatMs(p.value)}</b>
+        </div>`
       },
     },
-    legend: {
-      data: ['总驻留时间', '实际活跃时间'],
-      textStyle: { color: '#64748B', fontFamily: 'Inter', fontSize: 12 },
-      top: '0%',
-    },
-    grid: { left: '3%', right: '4%', bottom: '14%', containLabel: true },
+    grid: { left: '3%', right: '7%', bottom: '3%', top: '3%', containLabel: true },
     xAxis: {
-      type: 'category',
-      data: siteNames,
-      axisLine: { lineStyle: { color: '#E2E8F0' } },
-      axisLabel: {
-        color: '#64748B',
-        rotate: siteNames.length > 5 ? 25 : 0,
-        fontFamily: 'Inter',
-        fontSize: 11,
-      },
-    },
-    yAxis: {
       type: 'value',
       axisLine: { lineStyle: { color: '#E2E8F0' } },
       axisLabel: { color: '#64748B', formatter: (val: number) => `${Math.round(val / 60000)}分` },
       splitLine: { lineStyle: { color: '#F1F5F9' } },
     },
-    series: [
-      {
-        name: '总驻留时间',
-        type: 'bar',
-        barWidth: '24px',
-        data: siteOpenTimes,
-        itemStyle: {
-          color: '#E2E8F0',
-          borderRadius: [10, 10, 0, 0],
-        },
-        z: 1,
+    yAxis: {
+      type: 'category',
+      data: activeDomains,
+      inverse: true,
+      axisLine: { lineStyle: { color: '#E2E8F0' } },
+      axisLabel: {
+        color: '#64748B',
+        fontFamily: 'Inter',
+        fontSize: 11,
+        formatter: (val: string) => (val.length > 18 ? val.slice(0, 18) + '...' : val),
       },
+    },
+    series: [
       {
         name: '实际活跃时间',
         type: 'bar',
         barWidth: '14px',
-        barGap: '-79%',
-        data: siteActiveTimes,
+        data: activeValues,
         itemStyle: {
           color: {
             type: 'linear',
             x: 0,
             y: 0,
-            x2: 0,
-            y2: 1,
+            x2: 1,
+            y2: 0,
             colorStops: [
               { offset: 0, color: '#3B82F6' },
               { offset: 1, color: '#1D4ED8' },
             ],
           },
-          borderRadius: [8, 8, 0, 0],
+          borderRadius: [0, 8, 8, 0],
         },
-        z: 2,
+      },
+    ],
+  }
+
+  // 2. 挂机/后台驻留时间对比图数据 (横向条形图，按 openTimeMs 降序)
+  const sortedByOpen = [...domainStatsList].sort((a, b) => b.openTimeMs - a.openTimeMs).slice(0, 10)
+  const openDomains = sortedByOpen.map((d) => d.domain)
+  const openValues = sortedByOpen.map((d) => d.openTimeMs)
+
+  const idleComparisonChartOption = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params: any) => {
+        const p = params[0]
+        return `<div style="font-weight: bold; margin-bottom: 4px; color: #1E293B; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px;">${p.name}</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 4px;">
+          <span style="color: #64748B; font-weight: 600;">${p.marker} 挂机/后台驻留时间</span>
+          <b style="color: #0F172A; font-family: monospace;">${formatMs(p.value)}</b>
+        </div>`
+      },
+    },
+    grid: { left: '3%', right: '7%', bottom: '3%', top: '3%', containLabel: true },
+    xAxis: {
+      type: 'value',
+      axisLine: { lineStyle: { color: '#E2E8F0' } },
+      axisLabel: { color: '#64748B', formatter: (val: number) => `${Math.round(val / 60000)}分` },
+      splitLine: { lineStyle: { color: '#F1F5F9' } },
+    },
+    yAxis: {
+      type: 'category',
+      data: openDomains,
+      inverse: true,
+      axisLine: { lineStyle: { color: '#E2E8F0' } },
+      axisLabel: {
+        color: '#64748B',
+        fontFamily: 'Inter',
+        fontSize: 11,
+        formatter: (val: string) => (val.length > 18 ? val.slice(0, 18) + '...' : val),
+      },
+    },
+    series: [
+      {
+        name: '挂机/后台驻留时间',
+        type: 'bar',
+        barWidth: '14px',
+        data: openValues,
+        itemStyle: {
+          color: '#94A3B8',
+          borderRadius: [0, 8, 8, 0],
+        },
       },
     ],
   }
@@ -265,20 +298,27 @@ export default function OverviewTab({
         </div>
       </div>
 
-      {/* 全量网站使用时间对比柱状图 */}
-      <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm'>
-        <div className='flex items-center justify-between mb-4'>
-          <div className='flex items-center space-x-2'>
-            <BarChart3 className='w-5 h-5 text-[#2563EB]' />
-            <h3 className='text-base font-bold text-slate-900'>
-              全量网站使用时长对比柱状图 (横轴: 网站域名 / 纵轴: 使用时长)
+      {/* 全量网站使用时长对比拆分为两个横向展示柱状图 */}
+      <div className='grid grid-cols-2 gap-6'>
+        {/* 实际活跃时间对比 */}
+        <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm'>
+          <div className='flex items-center space-x-2 mb-4'>
+            <Activity className='w-5 h-5 text-[#2563EB]' />
+            <h3 className='text-sm font-bold text-slate-900'>实际活跃时间对比 (Top 10 网站)</h3>
+          </div>
+          <ReactECharts option={activeComparisonChartOption} style={{ height: '300px' }} />
+        </div>
+
+        {/* 挂机/后台驻留时间对比 */}
+        <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm'>
+          <div className='flex items-center space-x-2 mb-4'>
+            <Clock className='w-5 h-5 text-[#64748B]' />
+            <h3 className='text-sm font-bold text-slate-900'>
+              挂机/后台驻留时间对比 (Top 10 网站)
             </h3>
           </div>
-          <span className='text-xs text-[#64748B] font-medium'>
-            单柱对比：深蓝色表示实际活跃时间，灰色表示挂机/后台驻留时间
-          </span>
+          <ReactECharts option={idleComparisonChartOption} style={{ height: '300px' }} />
         </div>
-        <ReactECharts option={websiteComparisonChartOption} style={{ height: '320px' }} />
       </div>
 
       {/* 趋势 + 饼图 */}
