@@ -55,36 +55,31 @@ export default function OverviewTab({
   })
   const sortedDates = Object.keys(dateMap).sort()
 
-  // 网站使用时间对比柱状图 (全量网站使用时长对比柱状图，两个数据显示在一个柱上，不同颜色区分)
+  // 网站使用时间对比柱状图 (高颜值双色嵌套胶囊柱状图：外层底柱表示总驻留时间，内层蓝色渐变柱表示实际活跃时间)
   const siteList = domainStatsList.slice(0, 12)
   const siteNames = siteList.map((d) => d.domain)
   const siteActiveTimes = siteList.map((d) => d.activeTimeMs)
-  // 挂机/后台驻留时间 = openTimeMs - activeTimeMs (保证单柱总高度为总驻留时间)
-  const siteRestTimes = siteList.map((d) => Math.max(0, d.openTimeMs - d.activeTimeMs))
+  const siteOpenTimes = siteList.map((d) => d.openTimeMs)
 
   const websiteComparisonChartOption = {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
+      axisPointer: { type: 'shadow' },
       formatter: (params: any) => {
         let res = `<div style="font-weight: bold; margin-bottom: 6px; color: #1E293B; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px;">网站: ${params[0].axisValue}</div>`
-        let totalMs = 0
         params.forEach((p: any) => {
-          totalMs += p.value
+          const colorHex = typeof p.color === 'string' ? p.color : '#2563EB'
           res += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 4px;">
-            <span style="color: ${p.color}; font-weight: 600;">${p.marker} ${p.seriesName}</span>
+            <span style="color: ${colorHex}; font-weight: 600;">${p.marker} ${p.seriesName}</span>
             <b style="color: #0F172A; font-family: monospace;">${formatMs(p.value)}</b>
           </div>`
         })
-        res += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 6px; padding-top: 4px; border-top: 1px dashed #E2E8F0;">
-          <span style="color: #475569; font-weight: 700;">⏱️ 总驻留时间</span>
-          <b style="color: #0F172A; font-family: monospace;">${formatMs(totalMs)}</b>
-        </div>`
         return res
       },
     },
     legend: {
-      data: ['实际活跃时间', '挂机/后台驻留时间'],
+      data: ['总驻留时间', '实际活跃时间'],
       textStyle: { color: '#64748B', fontFamily: 'Inter', fontSize: 12 },
       top: '0%',
     },
@@ -108,26 +103,34 @@ export default function OverviewTab({
     },
     series: [
       {
-        name: '实际活跃时间',
+        name: '总驻留时间',
         type: 'bar',
-        stack: 'total',
-        barWidth: '40%',
-        data: siteActiveTimes,
+        barWidth: '24px',
+        data: siteOpenTimes,
         itemStyle: {
-          color: '#2563EB',
-          borderRadius: [0, 0, 4, 4],
+          color: '#E2E8F0',
+          borderRadius: [10, 10, 0, 0],
         },
+        z: 1,
       },
       {
-        name: '挂机/后台驻留时间',
+        name: '实际活跃时间',
         type: 'bar',
-        stack: 'total',
-        barWidth: '40%',
-        data: siteRestTimes,
+        barWidth: '14px',
+        barGap: '-79%',
+        data: siteActiveTimes,
         itemStyle: {
-          color: '#94A3B8',
-          borderRadius: [6, 6, 0, 0],
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: '#3B82F6' },
+              { offset: 1, color: '#1D4ED8' },
+            ],
+          },
+          borderRadius: [8, 8, 0, 0],
         },
+        z: 2,
       },
     ],
   }
