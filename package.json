@@ -30,7 +30,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
-    "package": "npm run build && cd dist && zip -r ../InsightTrack-extension.zip *"
+    "package": "npm run build && node scripts/package.js"
   },
   "dependencies": {
     "echarts": "^5.5.0",

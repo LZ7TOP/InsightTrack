@@ -35,3 +35,6 @@ jobs:
 
       - name: Build Extension (Vite)
         run: npm run build
+
+      - name: Test Packaging Pipeline
+        run: npm run package
