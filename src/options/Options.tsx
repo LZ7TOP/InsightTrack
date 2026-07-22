@@ -153,7 +153,7 @@ export default function Options() {
       {/* 右侧主内容区 */}
       <main className='flex-1 overflow-y-auto relative flex flex-col'>
         {/* 固定吸顶 Header & 时间筛选工具栏 */}
-        <header className='sticky top-0 z-30 bg-[#F0F2F8]/95 backdrop-blur-md px-8 py-5 border-b border-slate-200/60 flex items-center justify-between shadow-sm shrink-0'>
+        <header className='sticky top-0 z-30 bg-[#F0F2F8]/95 backdrop-blur-md px-8 py-5 border-b border-slate-200/60 flex items-center justify-between shadow-sm shrink-0 mb-6'>
           <div>
             <h2 className='text-2xl font-bold text-slate-900 tracking-tight'>
               {activeTab === 'overview' && '概览与多维度趋势分析'}
@@ -202,53 +202,55 @@ export default function Options() {
           </div>
         </header>
 
-        {/* 动态渲染组件化的各 Tab 内容页 */}
-        {activeTab === 'overview' && (
-          <OverviewTab
-            totalActiveMs={totalActiveMs}
-            totalOpenMs={totalOpenMs}
-            focusScore={focusScore}
-            domainStatsList={domainStatsList}
-            domainMap={domainMap}
-            logs={logs}
-          />
-        )}
+        {/* 动态渲染组件化的各 Tab 内容页 (补回 px-8 pb-8 外层容器间距) */}
+        <div className='px-8 pb-8 flex-1'>
+          {activeTab === 'overview' && (
+            <OverviewTab
+              totalActiveMs={totalActiveMs}
+              totalOpenMs={totalOpenMs}
+              focusScore={focusScore}
+              domainStatsList={domainStatsList}
+              domainMap={domainMap}
+              logs={logs}
+            />
+          )}
 
-        {activeTab === 'site_list' && (
-          <SiteListTab
-            siteList={siteList}
-            onJumpToDetail={handleJumpToDetail}
-          />
-        )}
+          {activeTab === 'site_list' && (
+            <SiteListTab
+              siteList={siteList}
+              onJumpToDetail={handleJumpToDetail}
+            />
+          )}
 
-        {activeTab === 'site_detail' && (
-          <SiteDetailTab
-            selectedDomain={selectedDomain}
-            onDomainChange={setSelectedDomain}
-            domainSelectOptions={domainSelectOptions}
-            domainMap={domainMap}
-            logs={logs}
-          />
-        )}
+          {activeTab === 'site_detail' && (
+            <SiteDetailTab
+              selectedDomain={selectedDomain}
+              onDomainChange={setSelectedDomain}
+              domainSelectOptions={domainSelectOptions}
+              domainMap={domainMap}
+              logs={logs}
+            />
+          )}
 
-        {activeTab === 'compare' && (
-          <CompareTab
-            domainStatsList={domainStatsList}
-            domainSelectOptions={domainSelectOptions}
-            initialDomain={selectedDomain}
-            logs={logs}
-          />
-        )}
+          {activeTab === 'compare' && (
+            <CompareTab
+              domainStatsList={domainStatsList}
+              domainSelectOptions={domainSelectOptions}
+              initialDomain={selectedDomain}
+              logs={logs}
+            />
+          )}
 
-        {activeTab === 'settings' && (
-          <SettingsTab
-            settings={settings}
-            logs={logs}
-            onSettingsChange={setSettingsState}
-            onDataChange={loadData}
-            onFlashMessage={showFlashMessage}
-          />
-        )}
+          {activeTab === 'settings' && (
+            <SettingsTab
+              settings={settings}
+              logs={logs}
+              onSettingsChange={setSettingsState}
+              onDataChange={loadData}
+              onFlashMessage={showFlashMessage}
+            />
+          )}
+        </div>
       </main>
 
       {/* 右下角固定 GitHub 图标与 LZ7工作室 LOGO 品牌卡片 */}
