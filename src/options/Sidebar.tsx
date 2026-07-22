@@ -87,8 +87,8 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         </nav>
       </div>
 
-      {/* 底部独立区域：项目介绍菜单与工作室信息 */}
-      <div className='pt-4 border-t border-slate-200 space-y-3 shrink-0'>
+      {/* 底部独立区域：项目介绍菜单与工作室品牌精致整合卡片 */}
+      <div className='pt-4 border-t border-slate-100 space-y-2 shrink-0'>
         {/* 独立底部的 项目介绍 菜单项 */}
         <button
           onClick={() => onTabChange('about')}
@@ -105,34 +105,34 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           {!isCollapsed && <span className='truncate animate-in fade-in duration-150'>项目介绍</span>}
         </button>
 
-        {/* LZ7工作室 版权信息 */}
-        <div className='text-[11px] font-semibold text-[#64748B] text-center flex flex-col items-center space-y-2 pt-1'>
-          {!isCollapsed ? (
-            <>
-              <div className='text-slate-400'>InsightTrack v1.0.0</div>
-              <a
-                href='https://github.com/LZ7TOP'
-                target='_blank'
-                rel='noreferrer'
-                className='inline-flex items-center space-x-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-700 font-bold transition-all border border-slate-200 group'
-                title='访问 LZ7工作室 GitHub (https://github.com/LZ7TOP)'
-              >
-                <img src='/logo_black.png' alt='LZ7工作室' className='w-4 h-4 object-contain rounded-sm' />
-                <span className='group-hover:text-[#2563EB] transition-colors'>LZ7工作室</span>
-              </a>
-            </>
-          ) : (
-            <a
-              href='https://github.com/LZ7TOP'
-              target='_blank'
-              rel='noreferrer'
-              className='p-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-slate-200'
-              title='LZ7工作室 (https://github.com/LZ7TOP)'
-            >
-              <img src='/logo_black.png' alt='LZ7工作室' className='w-4 h-4 object-contain rounded-sm' />
-            </a>
-          )}
-        </div>
+        {/* LZ7工作室 品牌与版本号整合卡片 */}
+        {!isCollapsed ? (
+          <a
+            href='https://github.com/LZ7TOP'
+            target='_blank'
+            rel='noreferrer'
+            className='flex items-center justify-between px-3.5 py-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl text-slate-600 transition-all border border-slate-200/70 group'
+            title='访问 LZ7工作室 GitHub (https://github.com/LZ7TOP)'
+          >
+            <div className='flex items-center space-x-2 truncate'>
+              <img src='/logo_black.png' alt='LZ7工作室' className='w-4 h-4 object-contain rounded-sm shrink-0' />
+              <span className='text-xs font-bold text-slate-800 group-hover:text-[#2563EB] transition-colors truncate'>
+                LZ7工作室
+              </span>
+            </div>
+            <span className='text-[10px] font-semibold text-slate-400 shrink-0'>v1.0.0</span>
+          </a>
+        ) : (
+          <a
+            href='https://github.com/LZ7TOP'
+            target='_blank'
+            rel='noreferrer'
+            className='flex items-center justify-center p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl transition-all border border-slate-200/70'
+            title='LZ7工作室 (https://github.com/LZ7TOP)'
+          >
+            <img src='/logo_black.png' alt='LZ7工作室' className='w-4 h-4 object-contain rounded-sm' />
+          </a>
+        )}
       </div>
     </aside>
   )
