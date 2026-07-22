@@ -8,6 +8,7 @@ import {
   cleanDomain,
 } from '../storage/db'
 import { DomainStats } from '../storage/types'
+import FaviconImg from '../components/FaviconImg'
 
 function formatDuration(ms: number): string {
   if (!ms || ms <= 0) return '0秒'
@@ -32,7 +33,7 @@ export default function Popup() {
   const [todayActiveMs, setTodayActiveMs] = useState<number>(0)
   const [currentDomainOpenMs, setCurrentDomainOpenMs] = useState<number>(0)
   const [currentDomainActiveMs, setCurrentDomainActiveMs] = useState<number>(0)
-  const [topDomains, setTopDomains] = useState<DomainStats[]>([])
+  const [topDomains, setTopDomains] = useState<DomainStats[]>()
   const [loading, setLoading] = useState<boolean>(true)
   const [refreshing, setRefreshing] = useState<boolean>(false)
 
@@ -44,7 +45,7 @@ export default function Popup() {
 
     let totalOpen = 0
     let totalActive = 0
-    const domainMap: Record<string, { open: number; active: number }> = {}
+    const domainMap: Record<string, { open: number; active: number; title: string }> = {}
 
     logs.forEach((log) => {
       totalOpen += log.openTimeMs
@@ -52,10 +53,13 @@ export default function Popup() {
 
       const domainKey = cleanDomain(log.domain)
       if (!domainMap[domainKey]) {
-        domainMap[domainKey] = { open: 0, active: 0 }
+        domainMap[domainKey] = { open: 0, active: 0, title: log.title || domainKey }
       }
       domainMap[domainKey].open += log.openTimeMs
       domainMap[domainKey].active += log.activeTimeMs
+      if (log.title && log.title !== domainKey) {
+        domainMap[domainKey].title = log.title
+      }
     })
 
     setTodayOpenMs(totalOpen)
@@ -64,6 +68,7 @@ export default function Popup() {
     const sortedDomains: DomainStats[] = Object.entries(domainMap)
       .map(([domain, stats]) => ({
         domain,
+        title: stats.title || domain,
         openTimeMs: stats.open,
         activeTimeMs: stats.active,
         lastVisited: Date.now(),
@@ -259,7 +264,7 @@ export default function Popup() {
       {/* Top Websites */}
       <div className='mt-2'>
         <h3 className='text-xs font-bold text-[#64748B] mb-2'>今日最常访问</h3>
-        {topDomains.length === 0 ? (
+        {!topDomains || topDomains.length === 0 ? (
           <div className='text-center py-4 text-xs text-[#64748B]'>暂无访问记录</div>
         ) : (
           <div className='space-y-2'>
@@ -268,24 +273,37 @@ export default function Popup() {
                 todayActiveMs > 0
                   ? Math.min(100, Math.round((item.activeTimeMs / todayActiveMs) * 100))
                   : 0
+              const displayTitle = (item as any).title || item.domain
+
               return (
                 <div
                   key={item.domain}
-                  className='bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm text-xs'
+                  className='bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm text-xs space-y-1.5'
                 >
-                  <div className='flex justify-between items-center mb-1.5'>
-                    <span className='font-semibold text-slate-800 truncate max-w-[170px]'>
-                      {item.domain}
-                    </span>
-                    <span className='text-[#64748B] font-mono'>
+                  <div className='flex justify-between items-center'>
+                    <div className='flex items-center space-x-2 min-w-0 max-w-[210px]'>
+                      <FaviconImg domain={item.domain} className='w-4 h-4 shrink-0' />
+                      <div className='flex items-center space-x-1 truncate text-xs'>
+                        <span
+                          className='font-semibold text-slate-800 truncate'
+                          title={displayTitle}
+                        >
+                          {displayTitle}
+                        </span>
+                        <span className='text-[#64748B] font-mono text-[11px] truncate'>
+                          ({item.domain})
+                        </span>
+                      </div>
+                    </div>
+                    <span className='text-[#64748B] font-mono text-[11px] font-bold shrink-0 ml-2'>
                       {formatDuration(item.activeTimeMs)}
                     </span>
                   </div>
-                  <div className='w-full bg-slate-100 h-2 rounded-full overflow-hidden'>
+                  <div className='w-full bg-slate-100 h-1.5 rounded-full overflow-hidden'>
                     <div
                       className='bg-[#2563EB] h-full rounded-full transition-all duration-300'
                       style={{ width: `${percent}%` }}
-                    ></div>
+                    />
                   </div>
                 </div>
               )
