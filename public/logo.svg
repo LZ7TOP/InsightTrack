@@ -1,81 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <!-- Background Gradient -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0F172A" />
-      <stop offset="50%" stop-color="#1E293B" />
-      <stop offset="100%" stop-color="#090D16" />
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#1D4ED8" />
     </linearGradient>
-
-    <!-- Ring Gradient Blue to Cyan -->
-    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#2563EB" />
-      <stop offset="50%" stop-color="#3B82F6" />
-      <stop offset="100%" stop-color="#06B6D4" />
-    </linearGradient>
-
-    <!-- Accent Active Beam Gradient -->
-    <linearGradient id="beamGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#2563EB" />
-      <stop offset="60%" stop-color="#38BDF8" />
-      <stop offset="100%" stop-color="#60A5FA" />
-    </linearGradient>
-
-    <!-- Orange Focus Spark Gradient -->
-    <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FF7E40" />
-      <stop offset="100%" stop-color="#BC4800" />
-    </linearGradient>
-
-    <!-- Drop Shadow Filter -->
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#020617" flood-opacity="0.6" />
-    </filter>
-
-    <!-- Inner Glow Filter -->
-    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="8" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
   </defs>
 
-  <!-- Outer Rounded Square Container -->
-  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
-  <rect width="504" height="504" x="4" y="4" rx="124" fill="none" stroke="url(#ringGrad)" stroke-opacity="0.3" stroke-width="4" />
+  <!-- 外层极简蓝底圆角方块 -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
 
-  <!-- Outer Ambient Glow Ring -->
-  <circle cx="256" cy="256" r="160" fill="none" stroke="url(#ringGrad)" stroke-width="12" stroke-opacity="0.15" />
-  
-  <!-- Outer Chrono Arc (270 degrees stroke) -->
-  <circle cx="256" cy="256" r="160" fill="none" stroke="url(#ringGrad)" stroke-width="16" stroke-linecap="round" stroke-dasharray="750 1000" transform="rotate(-125 256 256)" filter="url(#glow)" />
+  <!-- 外层表盘圆环 -->
+  <circle cx="256" cy="256" r="144" fill="none" stroke="#FFFFFF" stroke-width="28" />
 
-  <!-- Inner Active Arc (Orange Focus Accent) -->
-  <circle cx="256" cy="256" r="128" fill="none" stroke="url(#sparkGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="240 1000" transform="rotate(25 256 256)" />
+  <!-- 12点钟方向刻度标志 -->
+  <line x1="256" y1="124" x2="256" y2="148" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" />
 
-  <!-- Chrono Tick Marks -->
-  <g fill="#94A3B8" opacity="0.4">
-    <circle cx="256" cy="80" r="4" />
-    <circle cx="432" cy="256" r="4" />
-    <circle cx="256" cy="432" r="4" />
-    <circle cx="80" cy="256" r="4" />
-  </g>
+  <!-- 内部柱状图兼时钟指针组合 (极简数据 + 时间概念) -->
+  <!-- 左柱 (较矮) -->
+  <rect x="184" y="272" width="28" height="64" rx="14" fill="#FFFFFF" opacity="0.85" />
 
-  <!-- Eye of Insight Lens Path -->
-  <path d="M 144,256 C 180,180 332,180 368,256 C 332,332 180,332 144,256 Z" fill="none" stroke="url(#beamGrad)" stroke-width="12" stroke-linejoin="round" opacity="0.9" />
+  <!-- 中柱 (最高，兼作指针) -->
+  <rect x="242" y="176" width="28" height="160" rx="14" fill="#FFFFFF" />
 
-  <!-- Center Core Iris & Clock Beam -->
-  <g filter="url(#shadow)">
-    <!-- Core Iris Circle -->
-    <circle cx="256" cy="256" r="48" fill="#0F172A" stroke="url(#ringGrad)" stroke-width="10" />
+  <!-- 右柱 (中等) -->
+  <rect x="300" y="224" width="28" height="112" rx="14" fill="#FFFFFF" opacity="0.9" />
 
-    <!-- Center Pivot Dot -->
-    <circle cx="256" cy="256" r="18" fill="url(#sparkGrad)" />
-
-    <!-- Clock Needle / Ray of Insight pointing top-right -->
-    <path d="M 256,256 L 336,176" stroke="url(#beamGrad)" stroke-width="14" stroke-linecap="round" />
-    <circle cx="336" cy="176" r="10" fill="#38BDF8" filter="url(#glow)" />
-  </g>
-
-  <!-- Top-Right Spark Star (Focus & Precision) -->
-  <path d="M 370,120 Q 370,140 390,140 Q 370,140 370,160 Q 370,140 350,140 Q 370,140 370,120 Z" fill="url(#sparkGrad)" filter="url(#glow)" />
+  <!-- 焦点亮点 -->
+  <circle cx="256" cy="190" r="7" fill="#FF7E40" />
 </svg>
