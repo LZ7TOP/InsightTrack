@@ -134,7 +134,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         <div className='text-[11px] font-semibold text-[#64748B] text-center flex flex-col items-center space-y-2 pt-1'>
           {!isCollapsed ? (
             <>
-              <div className='text-slate-400 font-medium'>InsightTrack v1.0.0</div>
+              <div className='text-slate-400 font-medium'>InsightTrack v1.1.0</div>
               <a
                 href='https://github.com/LZ7TOP'
                 target='_blank'

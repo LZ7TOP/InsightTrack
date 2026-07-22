@@ -4,7 +4,13 @@
 
 ---
 
-## 🚧 [Unreleased]
+## 🚀 [v1.1.0] - 2026-07-22
+
+### ✨ Added (新增)
+
+- **官方网站与仓库配置关联**：项目全局集成官方主页地址 `https://insighttrack.lz7.com.cn` 与 GitHub 开源仓库入口，更新 `manifest.json` 与 `package.json` 的 homepage 规范。
+- **单站下钻与跨段比对 Header 大图标重构**：引入 `FaviconImg` 大尺寸网站 Icon（`w-14 h-14 rounded-2xl shadow-sm`）、网站名称标题与蓝框域名 Badge 胶囊，全维度对齐视觉审美。
+- **Popup 最常访问媒体列表**：重构插件 Popup「今日最常访问」列表为媒体对象 Flex 排版，最左侧独占独立图标列，右侧第一行展示网站名称与域名及活跃时长，第二行展示全宽比例进度条。
 
 ### 🔄 Changed (优化)
 

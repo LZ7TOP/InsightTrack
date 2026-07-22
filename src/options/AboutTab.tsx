@@ -28,7 +28,7 @@ export default function AboutTab() {
                 InsightTrack
               </h1>
               <span className='px-2.5 py-0.5 bg-blue-50 text-[#2563EB] border border-blue-200 rounded-full text-xs font-bold'>
-                v1.0.0
+                v1.1.0
               </span>
               <span className='px-2.5 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold'>
                 Manifest V3
