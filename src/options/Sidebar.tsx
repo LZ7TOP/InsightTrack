@@ -8,6 +8,7 @@ import {
   List,
   ChevronLeft,
   ChevronRight,
+  Info,
 } from 'lucide-react'
 import { TabType } from './utils'
 
@@ -24,6 +25,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { key: 'site_list', label: '网站明细', icon: List },
     { key: 'site_detail', label: '单站下钻', icon: Layers },
     { key: 'compare', label: '跨段比对', icon: GitCompare },
+    { key: 'about', label: '项目介绍', icon: Info },
     { key: 'settings', label: '偏好设置', icon: Settings },
   ]
 

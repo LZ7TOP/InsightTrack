@@ -14,6 +14,7 @@ import OverviewTab from './OverviewTab'
 import SiteListTab from './SiteListTab'
 import SiteDetailTab from './SiteDetailTab'
 import CompareTab from './CompareTab'
+import AboutTab from './AboutTab'
 import SettingsTab from './SettingsTab'
 import {
   TabType,
@@ -160,6 +161,7 @@ export default function Options() {
               {activeTab === 'site_list' && '网站明细'}
               {activeTab === 'site_detail' && '单站下钻'}
               {activeTab === 'compare' && '跨段比对'}
+              {activeTab === 'about' && '项目介绍'}
               {activeTab === 'settings' && '偏好设置'}
             </h2>
             <p className='text-xs font-semibold text-[#64748B] mt-1'>
@@ -240,6 +242,8 @@ export default function Options() {
               logs={logs}
             />
           )}
+
+          {activeTab === 'about' && <AboutTab />}
 
           {activeTab === 'settings' && (
             <SettingsTab

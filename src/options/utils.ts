@@ -1,7 +1,13 @@
 import { DomainStats } from '../storage/types'
 
 // 所有 Tab 页面共用的类型定义
-export type TabType = 'overview' | 'site_list' | 'site_detail' | 'compare' | 'settings'
+export type TabType =
+  | 'overview'
+  | 'site_list'
+  | 'site_detail'
+  | 'compare'
+  | 'about'
+  | 'settings'
 
 // 网站列表项
 export interface SiteListItem {
