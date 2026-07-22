@@ -54,6 +54,12 @@ export default function OverviewTab({
   })
   const sortedDates = Object.keys(dateMap).sort()
 
+  // 域名详细信息索引表
+  const domainDetailsMap: Record<string, DomainStats> = {}
+  domainStatsList.forEach((item) => {
+    domainDetailsMap[item.domain] = item
+  })
+
   // 1. 实际活跃时间对比图数据 (横向条形图，按 activeTimeMs 降序)
   const sortedByActive = [...domainStatsList]
     .sort((a, b) => b.activeTimeMs - a.activeTimeMs)
@@ -68,14 +74,40 @@ export default function OverviewTab({
       axisPointer: { type: 'shadow' },
       formatter: (params: any) => {
         const p = params[0]
-        return `<div style="font-weight: bold; margin-bottom: 4px; color: #1E293B; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px;">${p.name}</div>
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 4px;">
-          <span style="color: #2563EB; font-weight: 600;">${p.marker} 实际活跃时间</span>
-          <b style="color: #0F172A; font-family: monospace;">${formatMs(p.value)}</b>
+        const domain = p.name
+        const detail = domainDetailsMap[domain] || {
+          activeTimeMs: p.value,
+          openTimeMs: p.value,
+        }
+        const activeMs = detail.activeTimeMs || 0
+        const openMs = detail.openTimeMs || 0
+        const idleMs = Math.max(0, openMs - activeMs)
+        const rate = openMs > 0 ? Math.round((activeMs / openMs) * 100) : 0
+
+        return `<div style="font-weight: bold; font-size: 13px; margin-bottom: 8px; color: #0F172A; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          <span>🌐</span> <span>${domain}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; min-width: 190px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #2563EB; font-weight: 600;">⚡ 实际活跃时间</span>
+            <b style="color: #0F172A; font-family: monospace;">${formatMs(activeMs)}</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #64748B; font-weight: 600;">🕒 页面驻留总时长</span>
+            <b style="color: #0F172A; font-family: monospace;">${formatMs(openMs)}</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #94A3B8; font-weight: 600;">💤 挂机/后台时长</span>
+            <b style="color: #0F172A; font-family: monospace;">${formatMs(idleMs)}</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 4px; border-top: 1px dashed #E2E8F0;">
+            <span style="color: #BC4800; font-weight: 600;">🎯 专注率</span>
+            <b style="color: #BC4800; font-family: monospace;">${rate}%</b>
+          </div>
         </div>`
       },
     },
-    grid: { left: '3%', right: '7%', bottom: '3%', top: '3%', containLabel: true },
+    grid: { left: '3%', right: '22%', bottom: '3%', top: '3%', containLabel: true },
     xAxis: {
       type: 'value',
       axisLine: { lineStyle: { color: '#E2E8F0' } },
@@ -91,7 +123,7 @@ export default function OverviewTab({
         color: '#64748B',
         fontFamily: 'Inter',
         fontSize: 11,
-        formatter: (val: string) => (val.length > 18 ? val.slice(0, 18) + '...' : val),
+        formatter: (val: string) => (val.length > 16 ? val.slice(0, 16) + '...' : val),
       },
     },
     series: [
@@ -100,6 +132,14 @@ export default function OverviewTab({
         type: 'bar',
         barWidth: '14px',
         data: activeValues,
+        label: {
+          show: true,
+          position: 'right',
+          color: '#475569',
+          fontSize: 11,
+          fontFamily: 'Inter',
+          formatter: (params: any) => `${formatMs(params.value)}`,
+        },
         itemStyle: {
           color: {
             type: 'linear',
@@ -130,14 +170,40 @@ export default function OverviewTab({
       axisPointer: { type: 'shadow' },
       formatter: (params: any) => {
         const p = params[0]
-        return `<div style="font-weight: bold; margin-bottom: 4px; color: #1E293B; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px;">${p.name}</div>
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 4px;">
-          <span style="color: #64748B; font-weight: 600;">${p.marker} 挂机/后台驻留时间</span>
-          <b style="color: #0F172A; font-family: monospace;">${formatMs(p.value)}</b>
+        const domain = p.name
+        const detail = domainDetailsMap[domain] || {
+          activeTimeMs: p.value,
+          openTimeMs: p.value,
+        }
+        const activeMs = detail.activeTimeMs || 0
+        const openMs = detail.openTimeMs || 0
+        const idleMs = Math.max(0, openMs - activeMs)
+        const rate = openMs > 0 ? Math.round((activeMs / openMs) * 100) : 0
+
+        return `<div style="font-weight: bold; font-size: 13px; margin-bottom: 8px; color: #0F172A; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          <span>🌐</span> <span>${domain}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; min-width: 190px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #2563EB; font-weight: 600;">⚡ 实际活跃时间</span>
+            <b style="color: #0F172A; font-family: monospace;">${formatMs(activeMs)}</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #64748B; font-weight: 600;">🕒 页面驻留总时长</span>
+            <b style="color: #0F172A; font-family: monospace;">${formatMs(openMs)}</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #94A3B8; font-weight: 600;">💤 挂机/后台时长</span>
+            <b style="color: #0F172A; font-family: monospace;">${formatMs(idleMs)}</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 4px; border-top: 1px dashed #E2E8F0;">
+            <span style="color: #BC4800; font-weight: 600;">🎯 专注率</span>
+            <b style="color: #BC4800; font-family: monospace;">${rate}%</b>
+          </div>
         </div>`
       },
     },
-    grid: { left: '3%', right: '7%', bottom: '3%', top: '3%', containLabel: true },
+    grid: { left: '3%', right: '22%', bottom: '3%', top: '3%', containLabel: true },
     xAxis: {
       type: 'value',
       axisLine: { lineStyle: { color: '#E2E8F0' } },
@@ -153,7 +219,7 @@ export default function OverviewTab({
         color: '#64748B',
         fontFamily: 'Inter',
         fontSize: 11,
-        formatter: (val: string) => (val.length > 18 ? val.slice(0, 18) + '...' : val),
+        formatter: (val: string) => (val.length > 16 ? val.slice(0, 16) + '...' : val),
       },
     },
     series: [
@@ -162,6 +228,14 @@ export default function OverviewTab({
         type: 'bar',
         barWidth: '14px',
         data: openValues,
+        label: {
+          show: true,
+          position: 'right',
+          color: '#475569',
+          fontSize: 11,
+          fontFamily: 'Inter',
+          formatter: (params: any) => `${formatMs(params.value)}`,
+        },
         itemStyle: {
           color: '#94A3B8',
           borderRadius: [0, 8, 8, 0],
