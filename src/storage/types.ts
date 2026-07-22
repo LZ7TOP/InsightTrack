@@ -19,10 +19,12 @@ export interface DomainStats {
 }
 
 export interface AppSettings {
-  idleThresholdSeconds: number; // 默认空闲判断时长（秒）
+  enableIdleDetection: boolean; // 是否开启无操作判断空闲检测（默认 false 不开启）
+  idleThresholdSeconds: number; // 空闲判断超时时长（秒）
   blacklist: string[];          // 黑名单域名列表
   mergeSubdomains: boolean;    // 是否自动归并二级域名
   showBadge: boolean;          // 是否在插件图标显示角标时间
+  enableDailyGoal: boolean;    // 是否开启注意力目标与健康提醒功能（默认 false 不开启）
   dailyGoalHours: number;      // 每日活跃时间上限目标（小时）
   notifyOnGoalReached: boolean;// 超出目标是否发送桌面通知
   autoRefresh: boolean;        // 是否自动刷新仪表盘/Popup数据

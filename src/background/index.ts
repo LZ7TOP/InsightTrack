@@ -33,7 +33,9 @@ async function flushCurrentTime() {
 
     const settings = await getSettings();
     const idleThresholdMs = settings.idleThresholdSeconds * 1000;
-    const isUserActive = state.windowFocused && state.userActiveInContent && (now - state.lastUserActivityTime <= idleThresholdMs);
+    const isUserActive = settings.enableIdleDetection
+      ? (state.windowFocused && state.userActiveInContent && (now - state.lastUserActivityTime <= idleThresholdMs))
+      : state.windowFocused;
 
     // 3. 遍历所有打开的标签页分别累加时间
     for (const tab of allTabs) {

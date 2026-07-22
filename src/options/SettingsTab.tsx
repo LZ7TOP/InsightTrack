@@ -165,18 +165,39 @@ export default function SettingsTab({
         <div className='space-y-4'>
           <div className='flex items-center justify-between'>
             <div>
-              <span className='text-xs font-bold text-slate-800 block'>无操作判断空闲的超时阈值</span>
+              <span className='text-xs font-bold text-slate-800 block'>启用无操作判断空闲检测</span>
               <span className='text-[11px] text-[#64748B] block mt-0.5'>
-                在此时间内若检测不到鼠标或键盘交互，系统将自动暂停活跃时间的累加
+                默认关闭（在前台聚焦窗口即算活跃）；开启后无键盘鼠标操作超过设定阈值将自动暂停统计
               </span>
             </div>
-            <CustomSelect
-              options={idleOptions}
-              value={String(settings.idleThresholdSeconds)}
-              onChange={(val) => updateField('idleThresholdSeconds', Number(val))}
-              className='w-56'
-            />
+            <button
+              onClick={() => updateField('enableIdleDetection', !settings.enableIdleDetection)}
+              className='hover:opacity-80 transition-opacity'
+            >
+              {settings.enableIdleDetection ? (
+                <ToggleRight className='w-8 h-8 text-[#2563EB]' />
+              ) : (
+                <ToggleLeft className='w-8 h-8 text-slate-300' />
+              )}
+            </button>
           </div>
+
+          {settings.enableIdleDetection && (
+            <div className='flex items-center justify-between border-t border-slate-100 pt-3'>
+              <div>
+                <span className='text-xs font-bold text-slate-800 block'>无操作判断空闲的超时阈值</span>
+                <span className='text-[11px] text-[#64748B] block mt-0.5'>
+                  在此时间内若检测不到鼠标或键盘交互，系统将自动暂停活跃时间的累加
+                </span>
+              </div>
+              <CustomSelect
+                options={idleOptions}
+                value={String(settings.idleThresholdSeconds)}
+                onChange={(val) => updateField('idleThresholdSeconds', Number(val))}
+                className='w-56'
+              />
+            </div>
+          )}
 
           <div className='flex items-center justify-between border-t border-slate-100 pt-3'>
             <div>
@@ -264,37 +285,60 @@ export default function SettingsTab({
         <div className='space-y-4'>
           <div className='flex items-center justify-between'>
             <div>
-              <span className='text-xs font-bold text-slate-800 block'>每日活跃时间目标上限</span>
+              <span className='text-xs font-bold text-slate-800 block'>启用注意力目标与健康提醒</span>
               <span className='text-[11px] text-[#64748B] block mt-0.5'>
-                设置单日使用浏览器的健康活跃时长预算目标
-              </span>
-            </div>
-            <CustomSelect
-              options={goalOptions}
-              value={String(settings.dailyGoalHours)}
-              onChange={(val) => updateField('dailyGoalHours', Number(val))}
-              className='w-44'
-            />
-          </div>
-
-          <div className='flex items-center justify-between border-t border-slate-100 pt-3'>
-            <div>
-              <span className='text-xs font-bold text-slate-800 block'>超出目标时发送桌面通知提醒</span>
-              <span className='text-[11px] text-[#64748B] block mt-0.5'>
-                当今日活跃总时长突破所设定的目标上限时弹出通知提示
+                默认关闭；开启后可配置单日活跃时长预算目标与超出提醒
               </span>
             </div>
             <button
-              onClick={() => updateField('notifyOnGoalReached', !settings.notifyOnGoalReached)}
-              className='text-[#2563EB] hover:opacity-80 transition-opacity'
+              onClick={() => updateField('enableDailyGoal', !settings.enableDailyGoal)}
+              className='hover:opacity-80 transition-opacity'
             >
-              {settings.notifyOnGoalReached ? (
+              {settings.enableDailyGoal ? (
                 <ToggleRight className='w-8 h-8 text-[#2563EB]' />
               ) : (
                 <ToggleLeft className='w-8 h-8 text-slate-300' />
               )}
             </button>
           </div>
+
+          {settings.enableDailyGoal && (
+            <>
+              <div className='flex items-center justify-between border-t border-slate-100 pt-3'>
+                <div>
+                  <span className='text-xs font-bold text-slate-800 block'>每日活跃时间目标上限</span>
+                  <span className='text-[11px] text-[#64748B] block mt-0.5'>
+                    设置单日使用浏览器的健康活跃时长预算目标
+                  </span>
+                </div>
+                <CustomSelect
+                  options={goalOptions}
+                  value={String(settings.dailyGoalHours)}
+                  onChange={(val) => updateField('dailyGoalHours', Number(val))}
+                  className='w-44'
+                />
+              </div>
+
+              <div className='flex items-center justify-between border-t border-slate-100 pt-3'>
+                <div>
+                  <span className='text-xs font-bold text-slate-800 block'>超出目标时发送桌面通知提醒</span>
+                  <span className='text-[11px] text-[#64748B] block mt-0.5'>
+                    当今日活跃总时长突破所设定的目标上限时弹出通知提示
+                  </span>
+                </div>
+                <button
+                  onClick={() => updateField('notifyOnGoalReached', !settings.notifyOnGoalReached)}
+                  className='text-[#2563EB] hover:opacity-80 transition-opacity'
+                >
+                  {settings.notifyOnGoalReached ? (
+                    <ToggleRight className='w-8 h-8 text-[#2563EB]' />
+                  ) : (
+                    <ToggleLeft className='w-8 h-8 text-slate-300' />
+                  )}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

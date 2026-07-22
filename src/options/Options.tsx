@@ -30,10 +30,12 @@ export default function Options() {
   )
   const [logs, setLogs] = useState<PageVisitRecord[]>([])
   const [settings, setSettingsState] = useState<AppSettings>({
+    enableIdleDetection: false,
     idleThresholdSeconds: 180,
     blacklist: ['localhost', '127.0.0.1'],
     mergeSubdomains: false,
     showBadge: true,
+    enableDailyGoal: false,
     dailyGoalHours: 4,
     notifyOnGoalReached: true,
     autoRefresh: true,

@@ -177,10 +177,12 @@ export async function importVisitLogs(importedLogs: PageVisitRecord[]): Promise<
 
 // 设置与配置管理
 const DEFAULT_SETTINGS: AppSettings = {
+  enableIdleDetection: false,
   idleThresholdSeconds: 180,
   blacklist: ['localhost', '127.0.0.1'],
   mergeSubdomains: false,
   showBadge: true,
+  enableDailyGoal: false,
   dailyGoalHours: 4,
   notifyOnGoalReached: true,
   autoRefresh: true,
