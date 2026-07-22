@@ -1,7 +1,8 @@
 import ReactECharts from 'echarts-for-react'
-import { Activity, Clock, Zap } from 'lucide-react'
+import { Activity, Clock, Zap, Globe } from 'lucide-react'
 import { DomainStats } from '../storage/types'
 import { formatMs, DomainAggregation } from './utils'
+import FaviconImg from '../components/FaviconImg'
 
 interface OverviewTabProps {
   totalActiveMs: number
@@ -20,41 +21,6 @@ export default function OverviewTab({
   domainMap,
   logs,
 }: OverviewTabProps) {
-  // ECharts: 饼图
-  const pieOption = {
-    backgroundColor: 'transparent',
-    tooltip: {
-      trigger: 'item',
-      formatter: (params: any) => `${params.name}: ${formatMs(params.value)} (${params.percent}%)`,
-    },
-    series: [
-      {
-        name: '活跃时间',
-        type: 'pie',
-        radius: ['50%', '75%'],
-        avoidLabelOverlap: false,
-        itemStyle: { borderRadius: 8, borderColor: '#ffffff', borderWidth: 2 },
-        label: { show: false },
-        color: ['#2563EB', '#BC4800', '#059669', '#7C3AED', '#0284C7', '#D97706', '#DB2777'],
-        data: domainStatsList.slice(0, 10).map((d) => ({
-          name: d.domain,
-          value: d.activeTimeMs,
-        })),
-      },
-    ],
-  }
-
-  // 日期趋势数据
-  const dateMap: Record<string, { open: number; active: number }> = {}
-  logs.forEach((log) => {
-    if (!dateMap[log.date]) {
-      dateMap[log.date] = { open: 0, active: 0 }
-    }
-    dateMap[log.date].open += log.openTimeMs
-    dateMap[log.date].active += log.activeTimeMs
-  })
-  const sortedDates = Object.keys(dateMap).sort()
-
   // 域名详细信息索引表
   const domainDetailsMap: Record<string, DomainStats> = {}
   domainStatsList.forEach((item) => {
@@ -278,55 +244,6 @@ export default function OverviewTab({
     ],
   }
 
-  const trendOption = {
-    backgroundColor: 'transparent',
-    tooltip: {
-      trigger: 'axis',
-      formatter: (params: any) => {
-        let res = `${params[0].axisValue}<br/>`
-        params.forEach((p: any) => {
-          res += `${p.marker} ${p.seriesName}: ${formatMs(p.value)}<br/>`
-        })
-        return res
-      },
-    },
-    legend: {
-      data: ['实际活跃时间', '页面驻留时间'],
-      textStyle: { color: '#64748B', fontFamily: 'Inter' },
-    },
-    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: {
-      type: 'category',
-      data: sortedDates,
-      axisLine: { lineStyle: { color: '#E2E8F0' } },
-      axisLabel: { color: '#64748B' },
-    },
-    yAxis: {
-      type: 'value',
-      axisLine: { lineStyle: { color: '#E2E8F0' } },
-      axisLabel: { color: '#64748B', formatter: (val: number) => `${Math.round(val / 60000)}分` },
-      splitLine: { lineStyle: { color: '#F1F5F9' } },
-    },
-    series: [
-      {
-        name: '实际活跃时间',
-        type: 'line',
-        smooth: true,
-        data: sortedDates.map((d) => dateMap[d].active),
-        itemStyle: { color: '#2563EB' },
-        lineStyle: { width: 3 },
-      },
-      {
-        name: '页面驻留时间',
-        type: 'line',
-        smooth: true,
-        data: sortedDates.map((d) => dateMap[d].open),
-        itemStyle: { color: '#94A3B8' },
-        lineStyle: { width: 2, type: 'dashed' },
-      },
-    ],
-  }
-
   // 24小时分布
   const hourMap: number[] = new Array(24).fill(0)
   logs.forEach((log) => {
@@ -429,15 +346,96 @@ export default function OverviewTab({
         </div>
       </div>
 
-      {/* 趋势 + 饼图 */}
-      <div className='grid grid-cols-3 gap-6'>
-        <div className='col-span-2 bg-white border border-slate-200 p-6 rounded-2xl shadow-sm'>
-          <h3 className='text-sm font-bold text-slate-900 mb-4'>每日整体时间起伏趋势</h3>
-          <ReactECharts option={trendOption} style={{ height: '280px' }} />
+      {/* 网站使用明细列表 */}
+      <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4'>
+        <div className='flex items-center justify-between border-b border-slate-100 pb-3'>
+          <div className='flex items-center space-x-2'>
+            <Globe className='w-5 h-5 text-[#2563EB]' />
+            <h3 className='text-sm font-bold text-slate-900'>网站使用明细列表</h3>
+          </div>
+          <span className='text-xs text-[#64748B] font-medium'>
+            共 {domainStatsList.length} 个网站记录
+          </span>
         </div>
-        <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm'>
-          <h3 className='text-sm font-bold text-slate-900 mb-4'>Top 10 网站占比</h3>
-          <ReactECharts option={pieOption} style={{ height: '280px' }} />
+
+        <div className='overflow-x-auto'>
+          <table className='w-full text-left text-xs border-collapse'>
+            <thead>
+              <tr className='border-b border-slate-200 text-[#64748B] font-semibold bg-slate-50/50'>
+                <th className='py-3 px-4'>网站图标与名称</th>
+                <th className='py-3 px-4'>网站域名</th>
+                <th className='py-3 px-4'>实际活跃时间及对比占比</th>
+                <th className='py-3 px-4'>总驻留时间及对比占比</th>
+              </tr>
+            </thead>
+            <tbody className='divide-y divide-slate-100'>
+              {domainStatsList.map((d) => {
+                const title =
+                  (domainMap && domainMap[d.domain] && domainMap[d.domain].title) || d.domain
+                const activeRatio =
+                  totalActiveMs > 0 ? ((d.activeTimeMs / totalActiveMs) * 100).toFixed(1) : '0.0'
+                const openRatio =
+                  totalOpenMs > 0 ? ((d.openTimeMs / totalOpenMs) * 100).toFixed(1) : '0.0'
+
+                return (
+                  <tr key={d.domain} className='hover:bg-slate-50/80 transition-colors'>
+                    {/* 网站图标与名称 */}
+                    <td className='py-3 px-4 font-medium text-slate-900'>
+                      <div className='flex items-center space-x-2.5 max-w-[220px] truncate'>
+                        <FaviconImg domain={d.domain} className='w-5 h-5 shrink-0' />
+                        <span className='truncate font-semibold' title={title}>
+                          {title}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* 网站域名 */}
+                    <td className='py-3 px-4 font-mono text-[#64748B]'>{d.domain}</td>
+
+                    {/* 实际活跃时间及对比占比 */}
+                    <td className='py-3 px-4'>
+                      <div className='flex items-center space-x-3'>
+                        <span className='font-bold text-[#2563EB] font-mono min-w-[70px]'>
+                          {formatMs(d.activeTimeMs)}
+                        </span>
+                        <div className='flex items-center space-x-1.5 flex-1 max-w-[120px]'>
+                          <div className='w-full h-1.5 bg-slate-100 rounded-full overflow-hidden'>
+                            <div
+                              className='h-full bg-[#2563EB] rounded-full'
+                              style={{ width: `${Math.min(100, Number(activeRatio))}%` }}
+                            />
+                          </div>
+                          <span className='text-[11px] font-bold text-slate-600 font-mono w-10 text-right'>
+                            {activeRatio}%
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* 总驻留时间及对比占比 */}
+                    <td className='py-3 px-4'>
+                      <div className='flex items-center space-x-3'>
+                        <span className='font-bold text-slate-700 font-mono min-w-[70px]'>
+                          {formatMs(d.openTimeMs)}
+                        </span>
+                        <div className='flex items-center space-x-1.5 flex-1 max-w-[120px]'>
+                          <div className='w-full h-1.5 bg-slate-100 rounded-full overflow-hidden'>
+                            <div
+                              className='h-full bg-slate-400 rounded-full'
+                              style={{ width: `${Math.min(100, Number(openRatio))}%` }}
+                            />
+                          </div>
+                          <span className='text-[11px] font-bold text-slate-500 font-mono w-10 text-right'>
+                            {openRatio}%
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
