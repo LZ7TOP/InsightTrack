@@ -11,7 +11,7 @@ import {
   ToggleLeft,
   ToggleRight,
 } from 'lucide-react'
-import { AppSettings } from '../storage/types'
+import { AppSettings, PageVisitRecord } from '../storage/types'
 import {
   saveSettings,
   clearAllLogs,
@@ -20,8 +20,8 @@ import {
   getLocalDateStr,
   cleanDomain,
 } from '../storage/db'
-import { PageVisitRecord } from '../storage/types'
 import { CustomSelect, SelectOption } from '../components/CustomSelect'
+import ConfirmModal from '../components/ConfirmModal'
 
 interface SettingsTabProps {
   settings: AppSettings
@@ -62,6 +62,27 @@ export default function SettingsTab({
 }: SettingsTabProps) {
   const [newBlacklistItem, setNewBlacklistItem] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 优美的自定义确认弹窗 State
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    type: 'danger' | 'warning' | 'info'
+    confirmText?: string
+    cancelText?: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'danger',
+    onConfirm: () => {},
+  })
+
+  function closeModal() {
+    setModalConfig((prev) => ({ ...prev, isOpen: false }))
+  }
 
   async function updateField<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
     const newSettings = { ...settings, [key]: value }
@@ -118,34 +139,80 @@ export default function SettingsTab({
           onFlashMessage(`成功导入 ${count} 条备份历史记录！`)
           await onDataChange()
         } else {
-          alert('备份文件格式不符合要求！')
+          setModalConfig({
+            isOpen: true,
+            title: '格式错误',
+            message: '备份文件格式不符合要求，请导入标准的 JSON 数组备份文件。',
+            type: 'warning',
+            confirmText: '我知道了',
+            cancelText: '',
+            onConfirm: closeModal,
+          })
         }
       } catch {
-        alert('解析备份 JSON 文件失败，请检查文件格式。')
+        setModalConfig({
+          isOpen: true,
+          title: '解析失败',
+          message: '解析备份 JSON 文件失败，请检查文件编码与格式。',
+          type: 'danger',
+          confirmText: '我知道了',
+          cancelText: '',
+          onConfirm: closeModal,
+        })
       }
     }
     reader.readAsText(file)
     e.target.value = ''
   }
 
-  async function handleClearOldLogs() {
-    if (window.confirm('确定清理 30 天前的旧历史记录吗？')) {
-      const removed = await clearLogsOlderThan(30)
-      onFlashMessage(`成功清理 ${removed} 条旧浏览记录`)
-      await onDataChange()
-    }
+  function handleClearOldLogs() {
+    setModalConfig({
+      isOpen: true,
+      title: '清理旧历史记录',
+      message: '确定清理 30 天前的旧历史记录吗？清理后旧记录将不可恢复。',
+      type: 'warning',
+      confirmText: '确定清理',
+      cancelText: '取消',
+      onConfirm: async () => {
+        closeModal()
+        const removed = await clearLogsOlderThan(30)
+        onFlashMessage(`成功清理 ${removed} 条旧浏览记录`)
+        await onDataChange()
+      },
+    })
   }
 
-  async function handleClearLogs() {
-    if (window.confirm('确认要清空所有历史浏览记录吗？此操作无法撤销。')) {
-      await clearAllLogs()
-      await onDataChange()
-      onFlashMessage('已成功清空所有历史数据')
-    }
+  function handleClearLogs() {
+    setModalConfig({
+      isOpen: true,
+      title: '清空所有历史数据',
+      message: '确认要清空所有历史浏览记录吗？此操作无法撤销。',
+      type: 'danger',
+      confirmText: '确认清空',
+      cancelText: '取消',
+      onConfirm: async () => {
+        closeModal()
+        await clearAllLogs()
+        await onDataChange()
+        onFlashMessage('已成功清空所有历史数据')
+      },
+    })
   }
 
   return (
     <div className='space-y-6 w-full'>
+      {/* 全局优美的确认/提示弹窗 */}
+      <ConfirmModal
+        isOpen={modalConfig.isOpen}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        confirmText={modalConfig.confirmText}
+        cancelText={modalConfig.cancelText}
+        onConfirm={modalConfig.onConfirm}
+        onCancel={closeModal}
+      />
+
       {/* 隐藏的导入备份文件 input */}
       <input
         type='file'
@@ -343,8 +410,8 @@ export default function SettingsTab({
       </div>
 
       {/* 3. 不纳入统计的黑名单规则 */}
-      <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm'>
-        <div className='flex items-center justify-between mb-2'>
+      <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4'>
+        <div className='flex items-center justify-between border-b border-slate-100 pb-3'>
           <h3 className='text-sm font-bold text-slate-900 flex items-center space-x-2'>
             <Shield className='w-4 h-4 text-[#2563EB]' />
             <span>不纳入统计的网站黑名单</span>
@@ -353,87 +420,126 @@ export default function SettingsTab({
             onClick={handleAddDevPresetBlacklist}
             className='text-xs font-bold text-[#2563EB] hover:underline'
           >
-            + 一键导入本地开发免打扰黑名单
+            + 导入开发环境预设 (localhost / 127.0.0.1)
           </button>
         </div>
-        <p className='text-xs text-[#64748B] mb-4 font-medium'>
-          黑名单内的域名或匹配通配符的网站将完全暂停时间记录与统计。
+
+        <p className='text-xs text-[#64748B] font-medium'>
+          添加到黑名单中的域名将完全停止时间累加与行为追踪。支持通配符如 `*.local`
         </p>
 
-        <div className='flex space-x-2 mb-4'>
+        <div className='flex space-x-3'>
           <input
             type='text'
-            placeholder='如: github.com 或 *.local'
+            placeholder='输入要排除的域名 (如: internal.company.com)...'
             value={newBlacklistItem}
             onChange={(e) => setNewBlacklistItem(e.target.value)}
-            className='flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#2563EB]'
+            onKeyDown={(e) => e.key === 'Enter' && handleAddBlacklist()}
+            className='flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#2563EB]'
           />
           <button
             onClick={handleAddBlacklist}
-            className='px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs rounded-xl flex items-center space-x-1 shadow-md shadow-blue-500/20'
+            className='px-4 py-2 bg-[#2563EB] hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 shadow-md shadow-blue-500/20 transition-all'
           >
             <Plus className='w-4 h-4' />
-            <span>添加</span>
+            <span>添加黑名单</span>
           </button>
         </div>
 
-        <div className='flex flex-wrap gap-2'>
-          {settings.blacklist.map((item) => (
-            <span
-              key={item}
-              className='inline-flex items-center space-x-1.5 px-3 py-1 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700'
-            >
-              <span>{item}</span>
-              <button
-                onClick={() => handleRemoveBlacklist(item)}
-                className='text-[#64748B] hover:text-rose-600 transition-colors font-bold'
+        <div className='flex flex-wrap gap-2 pt-2'>
+          {settings.blacklist.length === 0 ? (
+            <span className='text-xs text-slate-400 italic'>暂未设置任何黑名单规则</span>
+          ) : (
+            settings.blacklist.map((item) => (
+              <span
+                key={item}
+                className='inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-mono font-bold border border-slate-200'
               >
-                ×
-              </button>
-            </span>
-          ))}
+                <span>{item}</span>
+                <button
+                  onClick={() => handleRemoveBlacklist(item)}
+                  className='text-slate-400 hover:text-red-500 transition-colors'
+                  title='移除此规则'
+                >
+                  ×
+                </button>
+              </span>
+            ))
+          )}
         </div>
       </div>
 
-      {/* 4. 数据管理与数据维护 */}
-      <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm'>
-        <h3 className='text-sm font-bold text-slate-900 mb-2'>数据备份、恢复与存储管理</h3>
-        <p className='text-xs text-[#64748B] mb-4 font-medium'>
-          所有浏览时间数据均加密存储在本地 IndexedDB 数据库中。
-        </p>
+      {/* 4. 数据备份、恢复与清理管理 */}
+      <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4'>
+        <h3 className='text-sm font-bold text-slate-900 flex items-center space-x-2 border-b border-slate-100 pb-3'>
+          <Download className='w-4 h-4 text-[#2563EB]' />
+          <span>数据备份、恢复与清理管理</span>
+        </h3>
 
-        <div className='flex flex-wrap items-center gap-3'>
-          <button
-            onClick={handleExportData}
-            className='px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center space-x-2 transition-all shadow-sm'
-          >
-            <Download className='w-4 h-4 text-[#2563EB]' />
-            <span>导出 JSON 备份</span>
-          </button>
+        <div className='grid grid-cols-2 gap-4'>
+          <div className='bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between'>
+            <div>
+              <span className='text-xs font-bold text-slate-800 block'>导出全量 JSON 备份</span>
+              <span className='text-[11px] text-[#64748B] block mt-0.5'>
+                将本地所有的细粒度访问日志下载为 JSON 文件
+              </span>
+            </div>
+            <button
+              onClick={handleExportData}
+              className='px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold text-xs rounded-xl shadow-sm flex items-center space-x-1.5 transition-all'
+            >
+              <Download className='w-3.5 h-3.5 text-[#2563EB]' />
+              <span>导出 JSON</span>
+            </button>
+          </div>
 
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className='px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center space-x-2 transition-all shadow-sm'
-          >
-            <Upload className='w-4 h-4 text-[#2563EB]' />
-            <span>导入 JSON 还原记录</span>
-          </button>
+          <div className='bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between'>
+            <div>
+              <span className='text-xs font-bold text-slate-800 block'>导入 JSON 备份历史</span>
+              <span className='text-[11px] text-[#64748B] block mt-0.5'>
+                从备份文件中恢复旧的历史浏览记录
+              </span>
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className='px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold text-xs rounded-xl shadow-sm flex items-center space-x-1.5 transition-all'
+            >
+              <Upload className='w-3.5 h-3.5 text-[#2563EB]' />
+              <span>选择文件导入</span>
+            </button>
+          </div>
 
-          <button
-            onClick={handleClearOldLogs}
-            className='px-4 py-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl flex items-center space-x-2 transition-all shadow-sm'
-          >
-            <CalendarX className='w-4 h-4 text-amber-600' />
-            <span>清理 30 天前旧日志</span>
-          </button>
+          <div className='bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between'>
+            <div>
+              <span className='text-xs font-bold text-slate-800 block'>定期清理旧历史数据</span>
+              <span className='text-[11px] text-[#64748B] block mt-0.5'>
+                一键擦除 30 天前的旧细粒度切页日志，释放存储
+              </span>
+            </div>
+            <button
+              onClick={handleClearOldLogs}
+              className='px-3.5 py-2 bg-white border border-slate-200 hover:bg-amber-50 text-amber-700 font-bold text-xs rounded-xl shadow-sm flex items-center space-x-1.5 transition-all'
+            >
+              <CalendarX className='w-3.5 h-3.5 text-amber-600' />
+              <span>清理 30 天前记录</span>
+            </button>
+          </div>
 
-          <button
-            onClick={handleClearLogs}
-            className='px-4 py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold text-xs rounded-xl flex items-center space-x-2 transition-all shadow-sm'
-          >
-            <Trash2 className='w-4 h-4' />
-            <span>清空全部历史数据</span>
-          </button>
+          <div className='bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between'>
+            <div>
+              <span className='text-xs font-bold text-slate-800 block'>清空全量数据库</span>
+              <span className='text-[11px] text-[#64748B] block mt-0.5'>
+                彻底擦除所有本地存储的浏览记录，不可恢复
+              </span>
+            </div>
+            <button
+              onClick={handleClearLogs}
+              className='px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold text-xs rounded-xl shadow-sm flex items-center space-x-1.5 transition-all'
+            >
+              <Trash2 className='w-3.5 h-3.5 text-red-600' />
+              <span>清空所有数据</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
