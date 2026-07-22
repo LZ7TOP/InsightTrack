@@ -89,9 +89,7 @@ export default function Options() {
     const domains = Array.from(
       new Set(fetchedLogs.map((l) => cleanDomain(l.domain))),
     )
-    if (domains.length > 0 && !selectedDomain) {
-      setSelectedDomain(domains[0])
-    }
+    setSelectedDomain((prev) => (prev ? prev : domains.length > 0 ? domains[0] : ''))
   }
 
   function handleRefresh() {
