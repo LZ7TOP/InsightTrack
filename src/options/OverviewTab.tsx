@@ -1,5 +1,5 @@
 import ReactECharts from 'echarts-for-react'
-import { Activity, Clock, Zap, TrendingUp } from 'lucide-react'
+import { Activity, Clock, Zap, LineChart } from 'lucide-react'
 import { DomainStats } from '../storage/types'
 import { formatMs, DomainAggregation } from './utils'
 
@@ -55,6 +55,81 @@ export default function OverviewTab({
   })
   const sortedDates = Object.keys(dateMap).sort()
 
+  // 网站使用时间对比折线图 (全量网站使用时长对比折线图)
+  const siteNames = domainStatsList.slice(0, 12).map((d) => d.domain)
+  const siteActiveTimes = domainStatsList.slice(0, 12).map((d) => d.activeTimeMs)
+  const siteOpenTimes = domainStatsList.slice(0, 12).map((d) => d.openTimeMs)
+
+  const websiteComparisonChartOption = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params: any) => {
+        let res = `<div style="font-weight: bold; margin-bottom: 4px; color: #1E293B;">网站: ${params[0].axisValue}</div>`
+        params.forEach((p: any) => {
+          res += `<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; margin-top: 2px;">
+            <span style="color: ${p.color}; font-weight: 600;">${p.marker} ${p.seriesName}</span>
+            <b style="color: #0F172A; font-family: monospace;">${formatMs(p.value)}</b>
+          </div>`
+        })
+        return res
+      },
+    },
+    legend: {
+      data: ['实际活跃时间', '总驻留时间'],
+      textStyle: { color: '#64748B', fontFamily: 'Inter' },
+      top: '0%',
+    },
+    grid: { left: '3%', right: '4%', bottom: '12%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: siteNames,
+      axisLine: { lineStyle: { color: '#E2E8F0' } },
+      axisLabel: {
+        color: '#64748B',
+        rotate: siteNames.length > 5 ? 25 : 0,
+        fontFamily: 'Inter',
+        fontSize: 11,
+      },
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: { lineStyle: { color: '#E2E8F0' } },
+      axisLabel: { color: '#64748B', formatter: (val: number) => `${Math.round(val / 60000)}分` },
+      splitLine: { lineStyle: { color: '#F1F5F9' } },
+    },
+    series: [
+      {
+        name: '实际活跃时间',
+        type: 'line',
+        smooth: true,
+        data: siteActiveTimes,
+        itemStyle: { color: '#2563EB' },
+        lineStyle: { width: 3 },
+        symbolSize: 8,
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(37, 99, 235, 0.25)' },
+              { offset: 1, color: 'rgba(37, 99, 235, 0.0)' },
+            ],
+          },
+        },
+      },
+      {
+        name: '总驻留时间',
+        type: 'line',
+        smooth: true,
+        data: siteOpenTimes,
+        itemStyle: { color: '#64748B' },
+        lineStyle: { width: 2, type: 'dashed' },
+        symbolSize: 6,
+      },
+    ],
+  }
+
   const trendOption = {
     backgroundColor: 'transparent',
     tooltip: {
@@ -91,39 +166,32 @@ export default function OverviewTab({
         smooth: true,
         data: sortedDates.map((d) => dateMap[d].active),
         itemStyle: { color: '#2563EB' },
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(37, 99, 235, 0.3)' },
-              { offset: 1, color: 'rgba(37, 99, 235, 0.0)' },
-            ],
-          },
-        },
+        lineStyle: { width: 3 },
       },
       {
         name: '页面驻留时间',
         type: 'line',
         smooth: true,
         data: sortedDates.map((d) => dateMap[d].open),
-        itemStyle: { color: '#64748B' },
+        itemStyle: { color: '#94A3B8' },
+        lineStyle: { width: 2, type: 'dashed' },
       },
     ],
   }
 
-  // 24h 热力图
-  const hourMap = new Array(24).fill(0)
+  // 24小时分布
+  const hourMap: number[] = new Array(24).fill(0)
   logs.forEach((log) => {
-    hourMap[log.hour] += log.activeTimeMs
+    if (log.hour >= 0 && log.hour < 24) {
+      hourMap[log.hour] += log.activeTimeMs
+    }
   })
 
   const hourOption = {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
-      formatter: (params: any) =>
-        `${params[0].axisValue}:00: ${formatMs(params[0].value)}`,
+      formatter: (params: any) => `${params[0].axisValue}点: ${formatMs(params[0].value)}`,
     },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: {
@@ -140,7 +208,7 @@ export default function OverviewTab({
     },
     series: [
       {
-        name: '活跃时间',
+        name: '活跃时长',
         type: 'bar',
         data: hourMap,
         itemStyle: { color: '#2563EB', borderRadius: [4, 4, 0, 0] },
@@ -150,32 +218,31 @@ export default function OverviewTab({
 
   return (
     <div className='space-y-6'>
-      {/* 指标卡片 */}
+      {/* 顶部指标卡片 */}
       <div className='grid grid-cols-3 gap-6'>
         <div className='bg-white border border-slate-200 p-5 rounded-2xl shadow-sm'>
           <div className='flex items-center justify-between text-[#2563EB] text-xs font-bold uppercase mb-2'>
-            <span>实际活跃时间</span>
+            <span>实际活跃时间 (Active Time)</span>
             <Activity className='w-4 h-4 text-[#2563EB]' />
           </div>
           <div className='text-2xl font-bold text-slate-900 tracking-tight'>
             {formatMs(totalActiveMs)}
           </div>
-          <div className='flex items-center space-x-1 text-[11px] font-semibold text-[#2563EB] mt-2'>
-            <TrendingUp className='w-3.5 h-3.5' />
-            <span>注意力前台聚焦时长</span>
+          <div className='text-[11px] font-medium text-[#64748B] mt-2'>
+            键盘鼠标存在实际交互的专注时间
           </div>
         </div>
 
         <div className='bg-white border border-slate-200 p-5 rounded-2xl shadow-sm'>
           <div className='flex items-center justify-between text-[#64748B] text-xs font-bold uppercase mb-2'>
-            <span>总驻留时间 (全标签页累加)</span>
+            <span>总驻留时间 (Open Time)</span>
             <Clock className='w-4 h-4 text-[#64748B]' />
           </div>
           <div className='text-2xl font-bold text-slate-800 tracking-tight'>
             {formatMs(totalOpenMs)}
           </div>
           <div className='text-[11px] font-medium text-[#64748B] mt-2'>
-            后台所有打开标签页的累计存在时长
+            标签页打开在浏览器中的挂机与后台总时长
           </div>
         </div>
 
@@ -191,6 +258,22 @@ export default function OverviewTab({
             实际活跃时长占驻留总时长比重
           </div>
         </div>
+      </div>
+
+      {/* 全量网站使用时间对比折线图 */}
+      <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm'>
+        <div className='flex items-center justify-between mb-4'>
+          <div className='flex items-center space-x-2'>
+            <LineChart className='w-5 h-5 text-[#2563EB]' />
+            <h3 className='text-base font-bold text-slate-900'>
+              全量网站使用时长对比折线图 (横轴: 网站域名 / 纵轴: 使用时长)
+            </h3>
+          </div>
+          <span className='text-xs text-[#64748B] font-medium'>
+            直观对比各个网站的实际活跃时间与总驻留时间高低
+          </span>
+        </div>
+        <ReactECharts option={websiteComparisonChartOption} style={{ height: '320px' }} />
       </div>
 
       {/* 趋势 + 饼图 */}
