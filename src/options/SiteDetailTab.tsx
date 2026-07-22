@@ -90,9 +90,7 @@ export default function SiteDetailTab({
 
       <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm'>
         <div className='flex items-center justify-between mb-4'>
-          <h3 className='text-sm font-bold text-slate-900'>
-            最常访问页面明细 ({selectedDomain})
-          </h3>
+          <h3 className='text-sm font-bold text-slate-900'>最常访问页面明细 ({selectedDomain})</h3>
           <span className='text-xs text-[#64748B] font-medium'>
             标题与完整 URL 超出时，悬停即可弹出查看全称；点击行可展开切页流水
           </span>
@@ -141,19 +139,19 @@ export default function SiteDetailTab({
                         />
                       </td>
                       <td className='p-3 text-[#64748B] font-mono max-w-[280px]'>
-                        <TooltipText
-                          text={page.url}
-                          maxWidthClass='max-w-[260px]'
-                          asMonospace
-                        />
+                        <TooltipText text={page.url} maxWidthClass='max-w-[260px]' asMonospace />
                       </td>
                       <td className='p-3 font-bold text-slate-700 whitespace-nowrap'>
                         <span className='px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200'>
                           {page.visitCount} 次切换
                         </span>
                       </td>
-                      <td className='p-3 text-[#2563EB] font-bold whitespace-nowrap'>{formatMs(page.activeMs)}</td>
-                      <td className='p-3 text-[#64748B] font-medium whitespace-nowrap'>{formatMs(page.openMs)}</td>
+                      <td className='p-3 text-[#2563EB] font-bold whitespace-nowrap'>
+                        {formatMs(page.activeMs)}
+                      </td>
+                      <td className='p-3 text-[#64748B] font-medium whitespace-nowrap'>
+                        {formatMs(page.openMs)}
+                      </td>
                       <td className='p-3 text-[#64748B] whitespace-nowrap'>{page.lastDate}</td>
                     </tr>
 

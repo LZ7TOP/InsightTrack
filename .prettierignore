@@ -1,0 +1,9 @@
+# Build & Output
+dist/
+node_modules/
+*.log
+
+# System & IDE
+.DS_Store
+.vscode/
+.idea/

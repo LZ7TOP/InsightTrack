@@ -128,9 +128,7 @@ export default function SiteListTab({ siteList, onJumpToDetail }: SiteListTabPro
                             style={{ width: `${site.focusRate}%` }}
                           ></div>
                         </div>
-                        <span className='font-bold text-xs text-slate-700'>
-                          {site.focusRate}%
-                        </span>
+                        <span className='font-bold text-xs text-slate-700'>{site.focusRate}%</span>
                       </div>
                     </td>
                     <td className='p-3.5 text-center whitespace-nowrap'>

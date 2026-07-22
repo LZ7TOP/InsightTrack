@@ -13,11 +13,7 @@ interface CompareTabProps {
   logs: PageVisitRecord[]
 }
 
-export default function CompareTab({
-  domainSelectOptions,
-  initialDomain,
-  logs,
-}: CompareTabProps) {
+export default function CompareTab({ domainSelectOptions, initialDomain, logs }: CompareTabProps) {
   const [compareDomain, setCompareDomain] = useState(initialDomain)
 
   // 对比单站点：当前选择网站在所选周期内每一天的时间对比数据计算
@@ -44,7 +40,8 @@ export default function CompareTab({
   const totalDomainActiveMs = domainDailyActive.reduce((a, b) => a + b, 0)
   const totalDomainOpenMs = domainDailyOpen.reduce((a, b) => a + b, 0)
   const activeDaysCount = domainDailyActive.filter((val) => val > 0).length
-  const avgDailyActiveMs = activeDaysCount > 0 ? Math.round(totalDomainActiveMs / activeDaysCount) : 0
+  const avgDailyActiveMs =
+    activeDaysCount > 0 ? Math.round(totalDomainActiveMs / activeDaysCount) : 0
 
   const singleDomainDailyComparisonChartOption = {
     backgroundColor: 'transparent',
@@ -116,7 +113,9 @@ export default function CompareTab({
           />
         </div>
         <div className='text-xs text-[#64748B] font-medium'>
-          正在查看 <span className='font-bold text-slate-900'>{compareDomain || '暂无选定网站'}</span> 在选择周期内每一天的时间对比
+          正在查看{' '}
+          <span className='font-bold text-slate-900'>{compareDomain || '暂无选定网站'}</span>{' '}
+          在选择周期内每一天的时间对比
         </div>
       </div>
 
@@ -164,10 +163,7 @@ export default function CompareTab({
             直观观察该网站在每一天的时间波动与专注趋势
           </span>
         </div>
-        <ReactECharts
-          option={singleDomainDailyComparisonChartOption}
-          style={{ height: '340px' }}
-        />
+        <ReactECharts option={singleDomainDailyComparisonChartOption} style={{ height: '340px' }} />
       </div>
     </div>
   )

@@ -24,8 +24,7 @@ export default function OverviewTab({
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'item',
-      formatter: (params: any) =>
-        `${params.name}: ${formatMs(params.value)} (${params.percent}%)`,
+      formatter: (params: any) => `${params.name}: ${formatMs(params.value)} (${params.percent}%)`,
     },
     series: [
       {
@@ -122,7 +121,10 @@ export default function OverviewTab({
         itemStyle: {
           color: {
             type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
             colorStops: [
               { offset: 0, color: '#3B82F6' },
               { offset: 1, color: '#1D4ED8' },
@@ -256,9 +258,7 @@ export default function OverviewTab({
             <span>专注率 (Focus Rate)</span>
             <Zap className='w-4 h-4 text-[#BC4800]' />
           </div>
-          <div className='text-2xl font-bold text-[#BC4800] tracking-tight'>
-            {focusScore}%
-          </div>
+          <div className='text-2xl font-bold text-[#BC4800] tracking-tight'>{focusScore}%</div>
           <div className='text-[11px] font-medium text-[#64748B] mt-2'>
             实际活跃时长占驻留总时长比重
           </div>

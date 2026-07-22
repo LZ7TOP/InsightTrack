@@ -42,8 +42,8 @@ export default function ConfirmModal({
               isDanger
                 ? 'bg-red-50 text-red-600 border border-red-200'
                 : isWarning
-                ? 'bg-amber-50 text-amber-600 border border-amber-200'
-                : 'bg-blue-50 text-[#2563EB] border border-blue-200'
+                  ? 'bg-amber-50 text-amber-600 border border-amber-200'
+                  : 'bg-blue-50 text-[#2563EB] border border-blue-200'
             }`}
           >
             {isDanger || isWarning ? (
@@ -77,8 +77,8 @@ export default function ConfirmModal({
               isDanger
                 ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20'
                 : isWarning
-                ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/20'
-                : 'bg-[#2563EB] hover:bg-blue-700 shadow-blue-500/20'
+                  ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/20'
+                  : 'bg-[#2563EB] hover:bg-blue-700 shadow-blue-500/20'
             }`}
           >
             {confirmText}

@@ -115,8 +115,7 @@ export default function SettingsTab({
 
   function handleExportData() {
     const dataStr =
-      'data:text/json;charset=utf-8,' +
-      encodeURIComponent(JSON.stringify(logs, null, 2))
+      'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(logs, null, 2))
     const downloadAnchor = document.createElement('a')
     downloadAnchor.setAttribute('href', dataStr)
     downloadAnchor.setAttribute('download', `insighttrack_backup_${getLocalDateStr()}.json`)
@@ -252,7 +251,9 @@ export default function SettingsTab({
           {settings.enableIdleDetection && (
             <div className='flex items-center justify-between border-t border-slate-100 pt-3'>
               <div>
-                <span className='text-xs font-bold text-slate-800 block'>无操作判断空闲的超时阈值</span>
+                <span className='text-xs font-bold text-slate-800 block'>
+                  无操作判断空闲的超时阈值
+                </span>
                 <span className='text-[11px] text-[#64748B] block mt-0.5'>
                   在此时间内若检测不到鼠标或键盘交互，系统将自动暂停活跃时间的累加
                 </span>
@@ -268,7 +269,9 @@ export default function SettingsTab({
 
           <div className='flex items-center justify-between border-t border-slate-100 pt-3'>
             <div>
-              <span className='text-xs font-bold text-slate-800 block'>在浏览器图标上实时显示角标时间</span>
+              <span className='text-xs font-bold text-slate-800 block'>
+                在浏览器图标上实时显示角标时间
+              </span>
               <span className='text-[11px] text-[#64748B] block mt-0.5'>
                 在工具栏扩展图标角标上实时展示当前网页今日活跃使用时长（如: 15s / 42m）
               </span>
@@ -287,7 +290,9 @@ export default function SettingsTab({
 
           <div className='flex items-center justify-between border-t border-slate-100 pt-3'>
             <div>
-              <span className='text-xs font-bold text-slate-800 block'>自动归并二级与多级子域名</span>
+              <span className='text-xs font-bold text-slate-800 block'>
+                自动归并二级与多级子域名
+              </span>
               <span className='text-[11px] text-[#64748B] block mt-0.5'>
                 如将 blog.github.com 自动无缝归并到 github.com 主域名下统一统计
               </span>
@@ -352,7 +357,9 @@ export default function SettingsTab({
         <div className='space-y-4'>
           <div className='flex items-center justify-between'>
             <div>
-              <span className='text-xs font-bold text-slate-800 block'>启用注意力目标与健康提醒</span>
+              <span className='text-xs font-bold text-slate-800 block'>
+                启用注意力目标与健康提醒
+              </span>
               <span className='text-[11px] text-[#64748B] block mt-0.5'>
                 默认关闭；开启后可配置单日活跃时长预算目标与超出提醒
               </span>
@@ -373,7 +380,9 @@ export default function SettingsTab({
             <>
               <div className='flex items-center justify-between border-t border-slate-100 pt-3'>
                 <div>
-                  <span className='text-xs font-bold text-slate-800 block'>每日活跃时间目标上限</span>
+                  <span className='text-xs font-bold text-slate-800 block'>
+                    每日活跃时间目标上限
+                  </span>
                   <span className='text-[11px] text-[#64748B] block mt-0.5'>
                     设置单日使用浏览器的健康活跃时长预算目标
                   </span>
@@ -388,7 +397,9 @@ export default function SettingsTab({
 
               <div className='flex items-center justify-between border-t border-slate-100 pt-3'>
                 <div>
-                  <span className='text-xs font-bold text-slate-800 block'>超出目标时发送桌面通知提醒</span>
+                  <span className='text-xs font-bold text-slate-800 block'>
+                    超出目标时发送桌面通知提醒
+                  </span>
                   <span className='text-[11px] text-[#64748B] block mt-0.5'>
                     当今日活跃总时长突破所设定的目标上限时弹出通知提示
                   </span>

@@ -91,9 +91,13 @@ export default function DateRangePicker({
             : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
         }`}
       >
-        <Calendar className={`w-3.5 h-3.5 ${dateRange === 'custom' || isOpen ? 'text-white' : 'text-[#2563EB]'}`} />
+        <Calendar
+          className={`w-3.5 h-3.5 ${dateRange === 'custom' || isOpen ? 'text-white' : 'text-[#2563EB]'}`}
+        />
         <span>{getButtonLabel()}</span>
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {/* 下拉面板 */}
@@ -145,7 +149,9 @@ export default function DateRangePicker({
 
             <div className='space-y-2'>
               <div>
-                <label className='text-[11px] font-semibold text-slate-600 block mb-1'>开始日期</label>
+                <label className='text-[11px] font-semibold text-slate-600 block mb-1'>
+                  开始日期
+                </label>
                 <input
                   type='date'
                   value={tempStart}
@@ -155,7 +161,9 @@ export default function DateRangePicker({
               </div>
 
               <div>
-                <label className='text-[11px] font-semibold text-slate-600 block mb-1'>结束日期</label>
+                <label className='text-[11px] font-semibold text-slate-600 block mb-1'>
+                  结束日期
+                </label>
                 <input
                   type='date'
                   value={tempEnd}

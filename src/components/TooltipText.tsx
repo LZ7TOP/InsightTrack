@@ -87,9 +87,7 @@ export default function TooltipText({
               zIndex: 99999,
             }}
             className={`pointer-events-none transition-all duration-200 ease-out origin-bottom ${
-              isVisible
-                ? 'opacity-100 scale-100'
-                : 'opacity-0 scale-95'
+              isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
             }`}
           >
             <div className='bg-[#0F172A]/95 backdrop-blur-md text-slate-100 text-xs font-semibold px-3 py-2 rounded-xl shadow-2xl shadow-slate-950/40 border border-slate-700/80 max-w-md whitespace-pre-wrap break-all leading-relaxed tracking-wide select-none'>
@@ -102,10 +100,7 @@ export default function TooltipText({
                 coords.placeAbove ? 'top-full' : '-top-1.5 rotate-180'
               }`}
             >
-              <svg
-                viewBox='0 0 12 6'
-                className='w-3 h-1.5 fill-[#0F172A]'
-              >
+              <svg viewBox='0 0 12 6' className='w-3 h-1.5 fill-[#0F172A]'>
                 <polygon points='0,0 6,6 12,0' />
               </svg>
             </div>

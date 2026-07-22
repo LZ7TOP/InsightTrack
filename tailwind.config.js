@@ -1,9 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx,html}",
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx,html}'],
   darkMode: 'class',
   theme: {
     extend: {
@@ -28,11 +25,11 @@ export default {
           light: '#F0F2F8',
           card: '#FFFFFF',
           border: '#E2E8F0',
-        }
+        },
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-      }
+      },
     },
   },
   plugins: [],

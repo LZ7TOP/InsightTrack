@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react'
 import { RotateCw, CheckCircle2 } from 'lucide-react'
-import {
-  getVisitLogsByDateRange,
-  getSettings,
-  getLocalDateStr,
-  cleanDomain,
-} from '../storage/db'
+import { getVisitLogsByDateRange, getSettings, getLocalDateStr, cleanDomain } from '../storage/db'
 import { PageVisitRecord, AppSettings } from '../storage/types'
 import { SelectOption } from '../components/CustomSelect'
 
@@ -16,13 +11,7 @@ import SiteDetailTab from './SiteDetailTab'
 import CompareTab from './CompareTab'
 import AboutTab from './AboutTab'
 import SettingsTab from './SettingsTab'
-import {
-  TabType,
-  buildDomainMap,
-  buildSiteList,
-  buildDomainStatsList,
-  formatMs,
-} from './utils'
+import { TabType, buildDomainMap, buildSiteList, buildDomainStatsList, formatMs } from './utils'
 
 import DateRangePicker, { DateRangeType } from '../components/DateRangePicker'
 
@@ -67,7 +56,13 @@ export default function Options() {
     }, intervalMs)
 
     return () => clearInterval(timer)
-  }, [settings.autoRefresh, settings.autoRefreshIntervalSeconds, dateRange, customStartDate, customEndDate])
+  }, [
+    settings.autoRefresh,
+    settings.autoRefreshIntervalSeconds,
+    dateRange,
+    customStartDate,
+    customEndDate,
+  ])
 
   async function loadData() {
     const end = new Date()
@@ -104,9 +99,7 @@ export default function Options() {
     const s = await getSettings()
     setSettingsState(s)
 
-    const domains = Array.from(
-      new Set(fetchedLogs.map((l) => cleanDomain(l.domain))),
-    )
+    const domains = Array.from(new Set(fetchedLogs.map((l) => cleanDomain(l.domain))))
     setSelectedDomain((prev) => (prev ? prev : domains.length > 0 ? domains[0] : ''))
   }
 
@@ -143,8 +136,7 @@ export default function Options() {
 
   const totalActiveMs = logs.reduce((sum, item) => sum + item.activeTimeMs, 0)
   const totalOpenMs = logs.reduce((sum, item) => sum + item.openTimeMs, 0)
-  const focusScore =
-    totalOpenMs > 0 ? Math.round((totalActiveMs / totalOpenMs) * 100) : 0
+  const focusScore = totalOpenMs > 0 ? Math.round((totalActiveMs / totalOpenMs) * 100) : 0
 
   return (
     <div className='flex h-screen bg-[#F0F2F8] text-slate-800 font-sans overflow-hidden'>
@@ -183,9 +175,7 @@ export default function Options() {
               title='强制将后台未落盘的内存时间写盘并刷新'
             >
               <RotateCw
-                className={`w-3.5 h-3.5 text-[#2563EB] ${
-                  refreshing ? 'animate-spin' : ''
-                }`}
+                className={`w-3.5 h-3.5 text-[#2563EB] ${refreshing ? 'animate-spin' : ''}`}
               />
               <span>刷新数据</span>
             </button>
@@ -218,10 +208,7 @@ export default function Options() {
           )}
 
           {activeTab === 'site_list' && (
-            <SiteListTab
-              siteList={siteList}
-              onJumpToDetail={handleJumpToDetail}
-            />
+            <SiteListTab siteList={siteList} onJumpToDetail={handleJumpToDetail} />
           )}
 
           {activeTab === 'site_detail' && (

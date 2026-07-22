@@ -1,22 +1,22 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { PageVisitRecord, AppSettings } from './types';
+import { openDB, DBSchema, IDBPDatabase } from 'idb'
+import { PageVisitRecord, AppSettings } from './types'
 
 interface InsightTrackDB extends DBSchema {
   visit_logs: {
-    key: number;
-    value: PageVisitRecord;
+    key: number
+    value: PageVisitRecord
     indexes: {
-      'by-date': string;
-      'by-domain': string;
-      'by-date-domain': [string, string];
-    };
-  };
+      'by-date': string
+      'by-domain': string
+      'by-date-domain': [string, string]
+    }
+  }
 }
 
-const DB_NAME = 'InsightTrackDB';
-const DB_VERSION = 1;
+const DB_NAME = 'InsightTrackDB'
+const DB_VERSION = 1
 
-let dbPromise: Promise<IDBPDatabase<InsightTrackDB>> | null = null;
+let dbPromise: Promise<IDBPDatabase<InsightTrackDB>> | null = null
 
 export function getDB() {
   if (!dbPromise) {
@@ -25,32 +25,32 @@ export function getDB() {
         const store = db.createObjectStore('visit_logs', {
           keyPath: 'id',
           autoIncrement: true,
-        });
-        store.createIndex('by-date', 'date');
-        store.createIndex('by-domain', 'domain');
-        store.createIndex('by-date-domain', ['date', 'domain']);
+        })
+        store.createIndex('by-date', 'date')
+        store.createIndex('by-domain', 'domain')
+        store.createIndex('by-date-domain', ['date', 'domain'])
       },
-    });
+    })
   }
-  return dbPromise;
+  return dbPromise
 }
 
 // 域名规范化清洗：移除前缀 www.
 export function cleanDomain(hostname: string): string {
-  if (!hostname) return '';
-  let d = hostname.toLowerCase();
+  if (!hostname) return ''
+  let d = hostname.toLowerCase()
   if (d.startsWith('www.')) {
-    d = d.slice(4);
+    d = d.slice(4)
   }
-  return d;
+  return d
 }
 
 // 获取本地时区 YYYY-MM-DD 字符串
 export function getLocalDateStr(date: Date = new Date()): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 // 记录或累加一次停留与活跃时长
@@ -58,7 +58,7 @@ export async function recordVisitTime(
   url: string,
   title: string,
   openDurationMs: number,
-  activeDurationMs: number
+  activeDurationMs: number,
 ) {
   if (
     !url ||
@@ -67,42 +67,42 @@ export async function recordVisitTime(
     url.startsWith('about:') ||
     url.startsWith('chrome-search://')
   ) {
-    return;
+    return
   }
 
-  let rawDomain = '';
+  let rawDomain = ''
   try {
-    const parsed = new URL(url);
-    rawDomain = parsed.hostname;
+    const parsed = new URL(url)
+    rawDomain = parsed.hostname
   } catch {
-    return;
+    return
   }
 
-  if (!rawDomain) return;
-  const domain = cleanDomain(rawDomain);
+  if (!rawDomain) return
+  const domain = cleanDomain(rawDomain)
 
   // 检查黑名单
-  const settings = await getSettings();
+  const settings = await getSettings()
   if (isBlacklisted(domain, settings.blacklist) || isBlacklisted(rawDomain, settings.blacklist)) {
-    return;
+    return
   }
 
-  const now = new Date();
-  const dateStr = getLocalDateStr(now);
-  const hour = now.getHours();
+  const now = new Date()
+  const dateStr = getLocalDateStr(now)
+  const hour = now.getHours()
 
-  const db = await getDB();
-  const logsOnDate = await db.getAllFromIndex('visit_logs', 'by-date', dateStr);
-  const existingRecord = logsOnDate.find((item) => item.url === url && item.hour === hour);
+  const db = await getDB()
+  const logsOnDate = await db.getAllFromIndex('visit_logs', 'by-date', dateStr)
+  const existingRecord = logsOnDate.find((item) => item.url === url && item.hour === hour)
 
   if (existingRecord) {
-    existingRecord.openTimeMs += openDurationMs;
-    existingRecord.activeTimeMs += activeDurationMs;
+    existingRecord.openTimeMs += openDurationMs
+    existingRecord.activeTimeMs += activeDurationMs
     if (title && title !== domain) {
-      existingRecord.title = title;
+      existingRecord.title = title
     }
-    existingRecord.timestamp = now.getTime();
-    await db.put('visit_logs', existingRecord);
+    existingRecord.timestamp = now.getTime()
+    await db.put('visit_logs', existingRecord)
   } else {
     const record: PageVisitRecord = {
       domain,
@@ -113,66 +113,69 @@ export async function recordVisitTime(
       openTimeMs: openDurationMs,
       activeTimeMs: activeDurationMs,
       timestamp: now.getTime(),
-    };
-    await db.add('visit_logs', record);
+    }
+    await db.add('visit_logs', record)
   }
 }
 
 // 获取某个时间范围内的所有记录
-export async function getVisitLogsByDateRange(startDate: string, endDate: string): Promise<PageVisitRecord[]> {
-  const db = await getDB();
-  const allLogs = await db.getAll('visit_logs');
-  return allLogs.filter((log) => log.date >= startDate && log.date <= endDate);
+export async function getVisitLogsByDateRange(
+  startDate: string,
+  endDate: string,
+): Promise<PageVisitRecord[]> {
+  const db = await getDB()
+  const allLogs = await db.getAll('visit_logs')
+  return allLogs.filter((log) => log.date >= startDate && log.date <= endDate)
 }
 
 // 获取特定域名的所有历史记录
 export async function getLogsByDomain(domain: string): Promise<PageVisitRecord[]> {
-  const db = await getDB();
-  const cleaned = cleanDomain(domain);
-  const allLogs = await db.getAll('visit_logs');
-  return allLogs.filter((log) => cleanDomain(log.domain) === cleaned);
+  const db = await getDB()
+  const cleaned = cleanDomain(domain)
+  const allLogs = await db.getAll('visit_logs')
+  return allLogs.filter((log) => cleanDomain(log.domain) === cleaned)
 }
 
 // 清空所有记录
 export async function clearAllLogs(): Promise<void> {
-  const db = await getDB();
-  await db.clear('visit_logs');
+  const db = await getDB()
+  await db.clear('visit_logs')
 }
 
 // 清除指定天数以前的历史记录
 export async function clearLogsOlderThan(days: number): Promise<number> {
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - days);
-  const cutoffStr = getLocalDateStr(cutoff);
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - days)
+  const cutoffStr = getLocalDateStr(cutoff)
 
-  const db = await getDB();
-  const allLogs = await db.getAll('visit_logs');
-  const oldLogs = allLogs.filter((log) => log.date < cutoffStr);
+  const db = await getDB()
+  const allLogs = await db.getAll('visit_logs')
+  const oldLogs = allLogs.filter((log) => log.date < cutoffStr)
 
-  const tx = db.transaction('visit_logs', 'readwrite');
+  const tx = db.transaction('visit_logs', 'readwrite')
   for (const log of oldLogs) {
     if (log.id !== undefined) {
-      await tx.store.delete(log.id);
+      await tx.store.delete(log.id)
     }
   }
-  await tx.done;
-  return oldLogs.length;
+  await tx.done
+  return oldLogs.length
 }
 
 // 导入外部 JSON 备份记录
 export async function importVisitLogs(importedLogs: PageVisitRecord[]): Promise<number> {
-  const db = await getDB();
-  const tx = db.transaction('visit_logs', 'readwrite');
-  let count = 0;
+  const db = await getDB()
+  const tx = db.transaction('visit_logs', 'readwrite')
+  let count = 0
   for (const log of importedLogs) {
     if (log.domain && log.date && log.url) {
-      delete log.id; // 让 DB 自动生成递增主键
-      await tx.store.add(log);
-      count++;
+      delete log.id // 让 DB 自动生成递增主键
+      await tx.store.add(log)
+      count++
     }
   }
-  await tx.done;
-  return count;
+  await tx.done
+  return count
 }
 
 // 设置与配置管理
@@ -187,32 +190,32 @@ const DEFAULT_SETTINGS: AppSettings = {
   notifyOnGoalReached: true,
   autoRefresh: true,
   autoRefreshIntervalSeconds: 5,
-};
+}
 
 export async function getSettings(): Promise<AppSettings> {
   return new Promise((resolve) => {
     chrome.storage.local.get(['settings'], (result) => {
-      resolve({ ...DEFAULT_SETTINGS, ...(result.settings || {}) });
-    });
-  });
+      resolve({ ...DEFAULT_SETTINGS, ...(result.settings || {}) })
+    })
+  })
 }
 
 export async function saveSettings(settings: AppSettings): Promise<void> {
   return new Promise((resolve) => {
     chrome.storage.local.set({ settings }, () => {
-      resolve();
-    });
-  });
+      resolve()
+    })
+  })
 }
 
 export function isBlacklisted(domain: string, blacklist: string[]): boolean {
-  const clean = cleanDomain(domain);
+  const clean = cleanDomain(domain)
   return blacklist.some((item) => {
-    const cleanItem = cleanDomain(item);
+    const cleanItem = cleanDomain(item)
     if (cleanItem.startsWith('*.')) {
-      const mainDomain = cleanItem.slice(2);
-      return clean === mainDomain || clean.endsWith('.' + mainDomain);
+      const mainDomain = cleanItem.slice(2)
+      return clean === mainDomain || clean.endsWith('.' + mainDomain)
     }
-    return clean === cleanItem || clean.endsWith('.' + cleanItem);
-  });
+    return clean === cleanItem || clean.endsWith('.' + cleanItem)
+  })
 }

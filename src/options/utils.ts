@@ -1,13 +1,7 @@
 import { DomainStats } from '../storage/types'
 
 // 所有 Tab 页面共用的类型定义
-export type TabType =
-  | 'overview'
-  | 'site_list'
-  | 'site_detail'
-  | 'compare'
-  | 'about'
-  | 'settings'
+export type TabType = 'overview' | 'site_list' | 'site_detail' | 'compare' | 'about' | 'settings'
 
 // 网站列表项
 export interface SiteListItem {
@@ -87,9 +81,7 @@ export function buildDomainMap(
 export function buildSiteList(domainMap: Record<string, DomainAggregation>): SiteListItem[] {
   return Object.entries(domainMap).map(([domain, stats]) => {
     const focusRate =
-      stats.open > 0
-        ? Math.min(100, Math.round((stats.active / stats.open) * 100))
-        : 0
+      stats.open > 0 ? Math.min(100, Math.round((stats.active / stats.open) * 100)) : 0
     return {
       domain,
       title: stats.title,

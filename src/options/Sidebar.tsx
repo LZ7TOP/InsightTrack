@@ -37,9 +37,15 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     >
       <div>
         {/* 顶部 Header & 收起/展开折叠按钮 */}
-        <div className={`flex items-center ${isCollapsed ? 'justify-center flex-col space-y-3' : 'justify-between'} mb-8`}>
+        <div
+          className={`flex items-center ${isCollapsed ? 'justify-center flex-col space-y-3' : 'justify-between'} mb-8`}
+        >
           <div className='flex items-center space-x-3 truncate'>
-            <img src='/logo.svg' alt='InsightTrack Logo' className='w-9 h-9 object-contain drop-shadow-sm shrink-0' />
+            <img
+              src='/logo.svg'
+              alt='InsightTrack Logo'
+              className='w-9 h-9 object-contain drop-shadow-sm shrink-0'
+            />
             {!isCollapsed && (
               <div className='truncate animate-in fade-in duration-200'>
                 <h1 className='font-bold text-base tracking-tight text-slate-900 truncate'>
@@ -57,7 +63,11 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             className='p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors'
             title={isCollapsed ? '展开侧边栏' : '收起侧边栏'}
           >
-            {isCollapsed ? <ChevronRight className='w-4 h-4' /> : <ChevronLeft className='w-4 h-4' />}
+            {isCollapsed ? (
+              <ChevronRight className='w-4 h-4' />
+            ) : (
+              <ChevronLeft className='w-4 h-4' />
+            )}
           </button>
         </div>
 
@@ -80,7 +90,9 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 }`}
               >
                 <Icon className='w-4 h-4 shrink-0' />
-                {!isCollapsed && <span className='truncate animate-in fade-in duration-150'>{item.label}</span>}
+                {!isCollapsed && (
+                  <span className='truncate animate-in fade-in duration-150'>{item.label}</span>
+                )}
               </button>
             )
           })}
@@ -130,7 +142,11 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 className='inline-flex items-center space-x-2 px-3.5 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-700 font-bold transition-all border border-slate-200/80 shadow-sm group'
                 title='访问 LZ7工作室 GitHub (https://github.com/LZ7TOP)'
               >
-                <img src='/logo_black.png' alt='LZ7工作室' className='w-4 h-4 object-contain rounded-sm' />
+                <img
+                  src='/logo_black.png'
+                  alt='LZ7工作室'
+                  className='w-4 h-4 object-contain rounded-sm'
+                />
                 <span className='group-hover:text-[#2563EB] transition-colors'>LZ7工作室</span>
               </a>
             </>
@@ -142,7 +158,11 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
               className='p-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-slate-200/80 shadow-sm'
               title='LZ7工作室 (https://github.com/LZ7TOP)'
             >
-              <img src='/logo_black.png' alt='LZ7工作室' className='w-4 h-4 object-contain rounded-sm' />
+              <img
+                src='/logo_black.png'
+                alt='LZ7工作室'
+                className='w-4 h-4 object-contain rounded-sm'
+              />
             </a>
           )}
         </div>
