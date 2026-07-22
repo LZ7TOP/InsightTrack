@@ -17,6 +17,7 @@ export default function OverviewTab({
   totalOpenMs,
   focusScore,
   domainStatsList,
+  domainMap,
   logs,
 }: OverviewTabProps) {
   // ECharts: 饼图
@@ -60,11 +61,20 @@ export default function OverviewTab({
     domainDetailsMap[item.domain] = item
   })
 
+  // SVG 内联图标定义 (替代原表情符号)
+  const globeIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`
+  const activityIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`
+  const clockIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`
+  const pauseIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>`
+  const zapIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#BC4800" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
+
   // 1. 实际活跃时间对比图数据 (横向条形图，按 activeTimeMs 降序)
   const sortedByActive = [...domainStatsList]
     .sort((a, b) => b.activeTimeMs - a.activeTimeMs)
     .slice(0, 10)
-  const activeDomains = sortedByActive.map((d) => d.domain)
+  const activeYLabels = sortedByActive.map(
+    (d) => (domainMap && domainMap[d.domain] && domainMap[d.domain].title) || d.domain,
+  )
   const activeValues = sortedByActive.map((d) => d.activeTimeMs)
 
   const activeComparisonChartOption = {
@@ -74,40 +84,47 @@ export default function OverviewTab({
       axisPointer: { type: 'shadow' },
       formatter: (params: any) => {
         const p = params[0]
-        const domain = p.name
-        const detail = domainDetailsMap[domain] || {
-          activeTimeMs: p.value,
-          openTimeMs: p.value,
-        }
+        const idx = p.dataIndex
+        const item = sortedByActive[idx]
+        const domain = item ? item.domain : p.name
+        const title = (domainMap && domainMap[domain] && domainMap[domain].title) || domain
+        const detail = domainDetailsMap[domain] ||
+          item || {
+            activeTimeMs: p.value,
+            openTimeMs: p.value,
+          }
         const activeMs = detail.activeTimeMs || 0
         const openMs = detail.openTimeMs || 0
         const idleMs = Math.max(0, openMs - activeMs)
         const rate = openMs > 0 ? Math.round((activeMs / openMs) * 100) : 0
 
-        return `<div style="font-weight: bold; font-size: 13px; margin-bottom: 8px; color: #0F172A; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-          <span>🌐</span> <span>${domain}</span>
+        return `<div style="font-weight: bold; font-size: 13px; margin-bottom: 2px; color: #0F172A; display: flex; align-items: center; gap: 6px;">
+          ${globeIcon} <span>${title}</span>
+        </div>
+        <div style="font-size: 11px; color: #64748B; margin-bottom: 8px; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; font-family: monospace; padding-left: 20px;">
+          ${domain}
         </div>
         <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; min-width: 190px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #2563EB; font-weight: 600;">⚡ 实际活跃时间</span>
+            <span style="color: #2563EB; font-weight: 600; display: flex; align-items: center; gap: 4px;">${activityIcon} 实际活跃时间</span>
             <b style="color: #0F172A; font-family: monospace;">${formatMs(activeMs)}</b>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #64748B; font-weight: 600;">🕒 页面驻留总时长</span>
+            <span style="color: #64748B; font-weight: 600; display: flex; align-items: center; gap: 4px;">${clockIcon} 页面驻留总时长</span>
             <b style="color: #0F172A; font-family: monospace;">${formatMs(openMs)}</b>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #94A3B8; font-weight: 600;">💤 挂机/后台时长</span>
+            <span style="color: #94A3B8; font-weight: 600; display: flex; align-items: center; gap: 4px;">${pauseIcon} 挂机/后台时长</span>
             <b style="color: #0F172A; font-family: monospace;">${formatMs(idleMs)}</b>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 4px; border-top: 1px dashed #E2E8F0;">
-            <span style="color: #BC4800; font-weight: 600;">🎯 专注率</span>
+            <span style="color: #BC4800; font-weight: 600; display: flex; align-items: center; gap: 4px;">${zapIcon} 专注率</span>
             <b style="color: #BC4800; font-family: monospace;">${rate}%</b>
           </div>
         </div>`
       },
     },
-    grid: { left: '3%', right: '22%', bottom: '3%', top: '3%', containLabel: true },
+    grid: { left: '3%', right: '28%', bottom: '3%', top: '3%', containLabel: true },
     xAxis: {
       type: 'value',
       axisLine: { lineStyle: { color: '#E2E8F0' } },
@@ -116,14 +133,14 @@ export default function OverviewTab({
     },
     yAxis: {
       type: 'category',
-      data: activeDomains,
+      data: activeYLabels,
       inverse: true,
       axisLine: { lineStyle: { color: '#E2E8F0' } },
       axisLabel: {
         color: '#64748B',
         fontFamily: 'Inter',
         fontSize: 11,
-        formatter: (val: string) => (val.length > 16 ? val.slice(0, 16) + '...' : val),
+        formatter: (val: string) => (val.length > 14 ? val.slice(0, 14) + '...' : val),
       },
     },
     series: [
@@ -138,7 +155,11 @@ export default function OverviewTab({
           color: '#475569',
           fontSize: 11,
           fontFamily: 'Inter',
-          formatter: (params: any) => `${formatMs(params.value)}`,
+          formatter: (params: any) => {
+            const item = sortedByActive[params.dataIndex]
+            const domain = item ? item.domain : ''
+            return `${domain} (${formatMs(params.value)})`
+          },
         },
         itemStyle: {
           color: {
@@ -160,7 +181,9 @@ export default function OverviewTab({
 
   // 2. 挂机/后台驻留时间对比图数据 (横向条形图，按 openTimeMs 降序)
   const sortedByOpen = [...domainStatsList].sort((a, b) => b.openTimeMs - a.openTimeMs).slice(0, 10)
-  const openDomains = sortedByOpen.map((d) => d.domain)
+  const openYLabels = sortedByOpen.map(
+    (d) => (domainMap && domainMap[d.domain] && domainMap[d.domain].title) || d.domain,
+  )
   const openValues = sortedByOpen.map((d) => d.openTimeMs)
 
   const idleComparisonChartOption = {
@@ -170,40 +193,47 @@ export default function OverviewTab({
       axisPointer: { type: 'shadow' },
       formatter: (params: any) => {
         const p = params[0]
-        const domain = p.name
-        const detail = domainDetailsMap[domain] || {
-          activeTimeMs: p.value,
-          openTimeMs: p.value,
-        }
+        const idx = p.dataIndex
+        const item = sortedByOpen[idx]
+        const domain = item ? item.domain : p.name
+        const title = (domainMap && domainMap[domain] && domainMap[domain].title) || domain
+        const detail = domainDetailsMap[domain] ||
+          item || {
+            activeTimeMs: p.value,
+            openTimeMs: p.value,
+          }
         const activeMs = detail.activeTimeMs || 0
         const openMs = detail.openTimeMs || 0
         const idleMs = Math.max(0, openMs - activeMs)
         const rate = openMs > 0 ? Math.round((activeMs / openMs) * 100) : 0
 
-        return `<div style="font-weight: bold; font-size: 13px; margin-bottom: 8px; color: #0F172A; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-          <span>🌐</span> <span>${domain}</span>
+        return `<div style="font-weight: bold; font-size: 13px; margin-bottom: 2px; color: #0F172A; display: flex; align-items: center; gap: 6px;">
+          ${globeIcon} <span>${title}</span>
+        </div>
+        <div style="font-size: 11px; color: #64748B; margin-bottom: 8px; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; font-family: monospace; padding-left: 20px;">
+          ${domain}
         </div>
         <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; min-width: 190px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #2563EB; font-weight: 600;">⚡ 实际活跃时间</span>
+            <span style="color: #2563EB; font-weight: 600; display: flex; align-items: center; gap: 4px;">${activityIcon} 实际活跃时间</span>
             <b style="color: #0F172A; font-family: monospace;">${formatMs(activeMs)}</b>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #64748B; font-weight: 600;">🕒 页面驻留总时长</span>
+            <span style="color: #64748B; font-weight: 600; display: flex; align-items: center; gap: 4px;">${clockIcon} 页面驻留总时长</span>
             <b style="color: #0F172A; font-family: monospace;">${formatMs(openMs)}</b>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #94A3B8; font-weight: 600;">💤 挂机/后台时长</span>
+            <span style="color: #94A3B8; font-weight: 600; display: flex; align-items: center; gap: 4px;">${pauseIcon} 挂机/后台时长</span>
             <b style="color: #0F172A; font-family: monospace;">${formatMs(idleMs)}</b>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 4px; border-top: 1px dashed #E2E8F0;">
-            <span style="color: #BC4800; font-weight: 600;">🎯 专注率</span>
+            <span style="color: #BC4800; font-weight: 600; display: flex; align-items: center; gap: 4px;">${zapIcon} 专注率</span>
             <b style="color: #BC4800; font-family: monospace;">${rate}%</b>
           </div>
         </div>`
       },
     },
-    grid: { left: '3%', right: '22%', bottom: '3%', top: '3%', containLabel: true },
+    grid: { left: '3%', right: '28%', bottom: '3%', top: '3%', containLabel: true },
     xAxis: {
       type: 'value',
       axisLine: { lineStyle: { color: '#E2E8F0' } },
@@ -212,14 +242,14 @@ export default function OverviewTab({
     },
     yAxis: {
       type: 'category',
-      data: openDomains,
+      data: openYLabels,
       inverse: true,
       axisLine: { lineStyle: { color: '#E2E8F0' } },
       axisLabel: {
         color: '#64748B',
         fontFamily: 'Inter',
         fontSize: 11,
-        formatter: (val: string) => (val.length > 16 ? val.slice(0, 16) + '...' : val),
+        formatter: (val: string) => (val.length > 14 ? val.slice(0, 14) + '...' : val),
       },
     },
     series: [
@@ -234,7 +264,11 @@ export default function OverviewTab({
           color: '#475569',
           fontSize: 11,
           fontFamily: 'Inter',
-          formatter: (params: any) => `${formatMs(params.value)}`,
+          formatter: (params: any) => {
+            const item = sortedByOpen[params.dataIndex]
+            const domain = item ? item.domain : ''
+            return `${domain} (${formatMs(params.value)})`
+          },
         },
         itemStyle: {
           color: '#94A3B8',
