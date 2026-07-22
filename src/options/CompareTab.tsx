@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import ReactECharts from 'echarts-for-react'
-import { GitCompare, Calendar, Activity, Clock } from 'lucide-react'
+import { GitCompare, Calendar, Activity, Zap } from 'lucide-react'
 import { DomainStats, PageVisitRecord } from '../storage/types'
 import { cleanDomain } from '../storage/db'
 import { CustomSelect, SelectOption } from '../components/CustomSelect'
+import FaviconImg from '../components/FaviconImg'
 import { formatMs } from './utils'
 
 interface CompareTabProps {
@@ -11,9 +12,15 @@ interface CompareTabProps {
   domainSelectOptions: SelectOption[]
   initialDomain: string
   logs: PageVisitRecord[]
+  domainMap?: Record<string, any>
 }
 
-export default function CompareTab({ domainSelectOptions, initialDomain, logs }: CompareTabProps) {
+export default function CompareTab({
+  domainSelectOptions,
+  initialDomain,
+  logs,
+  domainMap,
+}: CompareTabProps) {
   const [compareDomain, setCompareDomain] = useState(initialDomain)
 
   // 对比单站点：当前选择网站在所选周期内每一天的时间对比数据计算
@@ -42,6 +49,16 @@ export default function CompareTab({ domainSelectOptions, initialDomain, logs }:
   const activeDaysCount = domainDailyActive.filter((val) => val > 0).length
   const avgDailyActiveMs =
     activeDaysCount > 0 ? Math.round(totalDomainActiveMs / activeDaysCount) : 0
+  const maxDailyActiveMs = domainDailyActive.length > 0 ? Math.max(...domainDailyActive) : 0
+  const avgFocusRate =
+    totalDomainOpenMs > 0
+      ? Math.min(100, Math.round((totalDomainActiveMs / totalDomainOpenMs) * 100))
+      : 0
+
+  const currentTitle =
+    domainMap && domainMap[compareDomain]?.title
+      ? domainMap[compareDomain].title
+      : selectedDomainLogs[0]?.title || compareDomain
 
   const singleDomainDailyComparisonChartOption = {
     backgroundColor: 'transparent',
@@ -98,56 +115,79 @@ export default function CompareTab({ domainSelectOptions, initialDomain, logs }:
   }
 
   return (
-    <div className='space-y-6'>
-      {/* 单站点选择栏 */}
-      <div className='bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center justify-between'>
-        <div className='flex items-center space-x-3'>
-          <span className='text-xs font-bold text-[#64748B]'>选择要对比的网站:</span>
+    <div className='space-y-6 animate-in fade-in duration-200'>
+      {/* 顶部网站 Header 介绍卡片 (1:1 统一风格) */}
+      <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
+        <div className='flex items-center space-x-4'>
+          {/* 网站大图标 */}
+          <FaviconImg
+            domain={compareDomain}
+            className='w-14 h-14 rounded-2xl object-contain shadow-sm border border-slate-100 p-1 shrink-0 bg-slate-50'
+          />
+          <div>
+            <div className='flex flex-wrap items-center gap-2.5'>
+              <h2 className='text-xl font-extrabold text-slate-900 tracking-tight'>
+                {currentTitle}
+              </h2>
+              <span className='px-2.5 py-0.5 bg-blue-50 text-[#2563EB] border border-blue-200/80 rounded-lg text-xs font-mono font-bold shadow-xs'>
+                {compareDomain}
+              </span>
+            </div>
+            <p className='text-xs font-medium text-[#64748B] mt-1.5'>单站历史多周期跨段比对分析</p>
+          </div>
+        </div>
+
+        {/* 网站切换下拉框 */}
+        <div className='flex items-center space-x-2.5 shrink-0 self-end sm:self-center'>
+          <span className='text-xs font-bold text-[#64748B]'>切换对比网站:</span>
           <CustomSelect
             options={domainSelectOptions}
             value={compareDomain}
             onChange={setCompareDomain}
             searchable
             icon={<GitCompare className='w-4 h-4' />}
-            className='w-64'
+            className='w-60'
           />
-        </div>
-        <div className='text-xs text-[#64748B] font-medium'>
-          正在查看{' '}
-          <span className='font-bold text-slate-900'>{compareDomain || '暂无选定网站'}</span>{' '}
-          在选择周期内每一天的时间对比
         </div>
       </div>
 
       {/* 选定单站点的统计数据指标卡片 */}
-      <div className='grid grid-cols-3 gap-6'>
-        <div className='bg-white border border-slate-200 p-4 rounded-2xl shadow-sm'>
-          <div className='flex items-center justify-between text-[#2563EB] text-xs font-bold uppercase mb-1'>
-            <span>本周期累计活跃时间</span>
-            <Activity className='w-4 h-4' />
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+        <div className='bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-2'>
+          <div className='flex items-center justify-between text-[#2563EB] text-xs font-bold uppercase'>
+            <span>单站日均活跃</span>
+            <Activity className='w-4 h-4 text-[#2563EB]' />
           </div>
-          <div className='text-xl font-bold text-slate-900 tracking-tight'>
-            {formatMs(totalDomainActiveMs)}
+          <div className='text-2xl font-bold text-slate-900 tracking-tight font-mono'>
+            {formatMs(avgDailyActiveMs)}
           </div>
-        </div>
-
-        <div className='bg-white border border-slate-200 p-4 rounded-2xl shadow-sm'>
-          <div className='flex items-center justify-between text-[#64748B] text-xs font-bold uppercase mb-1'>
-            <span>本周期累计驻留时间</span>
-            <Clock className='w-4 h-4' />
-          </div>
-          <div className='text-xl font-bold text-slate-800 tracking-tight'>
-            {formatMs(totalDomainOpenMs)}
+          <div className='text-[11px] font-medium text-[#64748B]'>
+            在已计入的 {activeDaysCount} 个活跃天数中平均每日活跃
           </div>
         </div>
 
-        <div className='bg-white border border-slate-200 p-4 rounded-2xl shadow-sm'>
-          <div className='flex items-center justify-between text-[#059669] text-xs font-bold uppercase mb-1'>
-            <span>活跃天数与日均活跃</span>
-            <Calendar className='w-4 h-4' />
+        <div className='bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-2'>
+          <div className='flex items-center justify-between text-[#059669] text-xs font-bold uppercase'>
+            <span>最高单日活跃</span>
+            <Calendar className='w-4 h-4 text-[#059669]' />
           </div>
-          <div className='text-xl font-bold text-emerald-600 tracking-tight'>
-            {activeDaysCount} 天 (日均 {formatMs(avgDailyActiveMs)})
+          <div className='text-2xl font-bold text-emerald-600 tracking-tight font-mono'>
+            {formatMs(maxDailyActiveMs)}
+          </div>
+          <div className='text-[11px] font-medium text-[#64748B]'>本周期内单日最高访问活跃纪录</div>
+        </div>
+
+        <div className='bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-2'>
+          <div className='flex items-center justify-between text-[#BC4800] text-xs font-bold uppercase'>
+            <span>平均专注率</span>
+            <Zap className='w-4 h-4 text-[#BC4800]' />
+          </div>
+          <div className='text-2xl font-bold text-[#BC4800] tracking-tight font-mono'>
+            {avgFocusRate}%
+          </div>
+          <div className='text-[11px] font-medium text-[#64748B]'>
+            本周期累计活跃 ({formatMs(totalDomainActiveMs)}) / 累计驻留 (
+            {formatMs(totalDomainOpenMs)})
           </div>
         </div>
       </div>

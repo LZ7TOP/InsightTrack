@@ -227,6 +227,7 @@ export default function Options() {
               domainSelectOptions={domainSelectOptions}
               initialDomain={selectedDomain}
               logs={logs}
+              domainMap={domainMap}
             />
           )}
 

@@ -1,9 +1,10 @@
 import { Fragment, useState } from 'react'
-import { Clock, Globe, ChevronRight, ChevronDown } from 'lucide-react'
+import { Clock, Globe, ChevronRight, ChevronDown, Activity, Zap } from 'lucide-react'
 import { PageVisitRecord } from '../storage/types'
 import { cleanDomain } from '../storage/db'
 import { SelectOption, CustomSelect } from '../components/CustomSelect'
 import TooltipText from '../components/TooltipText'
+import FaviconImg from '../components/FaviconImg'
 import { formatMs, formatTimestamp, DomainAggregation } from './utils'
 
 interface SiteDetailTabProps {
@@ -65,26 +66,78 @@ export default function SiteDetailTab({
   })
 
   const aggregatedPageList = Object.values(pageMap).sort((a, b) => b.activeMs - a.activeMs)
+  const currentActiveMs = domainMap[selectedDomain]?.active || 0
+  const currentOpenMs = domainMap[selectedDomain]?.open || 0
+  const focusRate =
+    currentOpenMs > 0 ? Math.min(100, Math.round((currentActiveMs / currentOpenMs) * 100)) : 0
 
   return (
-    <div className='space-y-6'>
-      <div className='bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center justify-between'>
-        <div className='flex items-center space-x-3'>
-          <span className='text-xs font-bold text-[#64748B]'>选择要分析的网站:</span>
+    <div className='space-y-6 animate-in fade-in duration-200'>
+      {/* 顶部网站 Header 介绍卡片 (1:1 匹配用户要求) */}
+      <div className='bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
+        <div className='flex items-center space-x-4'>
+          {/* 网站大图标 */}
+          <FaviconImg
+            domain={selectedDomain}
+            className='w-14 h-14 rounded-2xl object-contain shadow-sm border border-slate-100 p-1 shrink-0 bg-slate-50'
+          />
+          <div>
+            <div className='flex flex-wrap items-center gap-2.5'>
+              <h2 className='text-xl font-extrabold text-slate-900 tracking-tight'>
+                {domainMap[selectedDomain]?.title || selectedDomain}
+              </h2>
+              <span className='px-2.5 py-0.5 bg-blue-50 text-[#2563EB] border border-blue-200/80 rounded-lg text-xs font-mono font-bold shadow-xs'>
+                {selectedDomain}
+              </span>
+            </div>
+            <p className='text-xs font-medium text-[#64748B] mt-1.5'>单站注意力与时间深度分析</p>
+          </div>
+        </div>
+
+        {/* 网站切换下拉框 */}
+        <div className='flex items-center space-x-2.5 shrink-0 self-end sm:self-center'>
+          <span className='text-xs font-bold text-[#64748B]'>切换网站:</span>
           <CustomSelect
             options={domainSelectOptions}
             value={selectedDomain}
             onChange={onDomainChange}
             searchable
             icon={<Globe className='w-4 h-4' />}
-            className='w-64'
+            className='w-60'
           />
         </div>
-        <div className='text-right'>
-          <span className='text-xs font-medium text-[#64748B] block'>该站点活跃总时长</span>
-          <span className='text-lg font-bold text-[#2563EB]'>
-            {formatMs(domainMap[selectedDomain]?.active || 0)}
-          </span>
+      </div>
+
+      {/* 单站核心数据指标卡片 */}
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+        <div className='bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-2'>
+          <div className='flex items-center justify-between text-[#2563EB] text-xs font-bold'>
+            <span>单站实际活跃时间</span>
+            <Activity className='w-4 h-4 text-[#2563EB]' />
+          </div>
+          <div className='text-2xl font-bold text-slate-900 tracking-tight font-mono'>
+            {formatMs(currentActiveMs)}
+          </div>
+        </div>
+
+        <div className='bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-2'>
+          <div className='flex items-center justify-between text-[#64748B] text-xs font-bold'>
+            <span>单站总驻留时间</span>
+            <Clock className='w-4 h-4 text-[#64748B]' />
+          </div>
+          <div className='text-2xl font-bold text-slate-800 tracking-tight font-mono'>
+            {formatMs(currentOpenMs)}
+          </div>
+        </div>
+
+        <div className='bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-2'>
+          <div className='flex items-center justify-between text-[#BC4800] text-xs font-bold'>
+            <span>单站专注率</span>
+            <Zap className='w-4 h-4 text-[#BC4800]' />
+          </div>
+          <div className='text-2xl font-bold text-[#BC4800] tracking-tight font-mono'>
+            {focusRate}%
+          </div>
         </div>
       </div>
 
