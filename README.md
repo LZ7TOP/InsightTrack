@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="public/logo_black.png" alt="LZ7工作室 LOGO" width="96" height="96" />
+<img src="public/logo.svg" alt="InsightTrack Logo" width="112" height="112" />
 
-# 🔍 InsightTrack
+# InsightTrack
 
 **精准网页注意力与时间分析浏览器扩展**
 
@@ -113,9 +113,9 @@
 LZ7_InsightTrack/
 ├── public/
 │   ├── manifest.json          # Chrome 扩展 MV3 清单文件
-│   ├── logo.png               # LZ7工作室 彩色 LOGO
-│   ├── logo_black.png         # LZ7工作室 深色 LOGO
-│   └── icons/                 # 扩展图标 (16 / 48 / 128)
+│   ├── logo.svg               # InsightTrack 全局矢量 LOGO 图标
+│   ├── logo_black.png         # LZ7工作室 品牌 LOGO
+│   └── icons/                 # 扩展全套应用图标 (16 / 48 / 128)
 ├── LOGO.png
 ├── LOGO_BLACK.png
 ├── src/
