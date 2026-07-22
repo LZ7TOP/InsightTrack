@@ -16,10 +16,10 @@ interface SidebarProps {
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const navItems: { key: TabType; label: string; icon: typeof Clock }[] = [
     { key: 'overview', label: '概览分析', icon: BarChart3 },
-    { key: 'site_list', label: '网站列表明细', icon: List },
-    { key: 'site_detail', label: '单站点深度下钻', icon: Layers },
-    { key: 'compare', label: '历史跨段比对', icon: GitCompare },
-    { key: 'settings', label: '偏好与设置', icon: Settings },
+    { key: 'site_list', label: '网站明细', icon: List },
+    { key: 'site_detail', label: '单站下钻', icon: Layers },
+    { key: 'compare', label: '跨段比对', icon: GitCompare },
+    { key: 'settings', label: '偏好设置', icon: Settings },
   ]
 
   return (

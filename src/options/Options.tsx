@@ -156,11 +156,11 @@ export default function Options() {
         <header className='sticky top-0 z-30 bg-[#F0F2F8]/95 backdrop-blur-md px-8 py-5 border-b border-slate-200/60 flex items-center justify-between shadow-sm shrink-0 mb-6'>
           <div>
             <h2 className='text-2xl font-bold text-slate-900 tracking-tight'>
-              {activeTab === 'overview' && '概览与多维度趋势分析'}
-              {activeTab === 'site_list' && '全量网站访问明细表'}
-              {activeTab === 'site_detail' && '单站点下钻与切页流水'}
-              {activeTab === 'compare' && '全量网站时间对比与比对'}
-              {activeTab === 'settings' && '偏好设置与数据管理控制台'}
+              {activeTab === 'overview' && '概览分析'}
+              {activeTab === 'site_list' && '网站明细'}
+              {activeTab === 'site_detail' && '单站下钻'}
+              {activeTab === 'compare' && '跨段比对'}
+              {activeTab === 'settings' && '偏好设置'}
             </h2>
             <p className='text-xs font-semibold text-[#64748B] mt-1'>
               InsightTrack · 洞察真实注意力分配
